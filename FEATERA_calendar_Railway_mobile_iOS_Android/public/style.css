@@ -541,3 +541,13 @@ body.platform-android input,body.platform-android select,body.platform-android t
   background:#e7e8e9;
   cursor:default;
 }
+
+
+/* V6：跨月日期隱藏，但格子仍可編輯與顯示自訂行程 */
+.day.cross-month-empty{
+  cursor:pointer;
+  position:relative;
+}
+.day.cross-month-empty .date-num{
+  display:none!important;
+}

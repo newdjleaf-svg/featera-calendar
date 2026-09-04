@@ -173,6 +173,19 @@ function dayHtml(dateObj,label){
   </div>`;
 }
 
+function crossMonthDayHtml(d){
+  const dateStr=iso(d.getFullYear(),d.getMonth(),d.getDate());
+  const weekend=d.getDay()===0||d.getDay()===6;
+
+  // 跨月格不顯示日期數字，但仍保留真實日期與該日期的自訂行程。
+  // 官方假日不在跨月格顯示，避免干擾目前月份的視覺焦點。
+  const evs=state.events.filter(e=>e.date===dateStr);
+
+  return `<div class="day cross-month-empty ${weekend?"weekend":""}" data-date="${dateStr}">
+    ${evs.map(eventHtml).join("")}
+  </div>`;
+}
+
 function render(){
   updateAutoTitle();
   calendarTitle.textContent=state.title;
@@ -186,8 +199,8 @@ function render(){
   let cells="";
 
   // 固定 7 x 5 = 35 格。
-  // 僅顯示「目前選擇月份」的日期。
-  // 月初之前及月底之後的跨月日期全部留白。
+  // 當月日期正常顯示；跨月格隱藏日期數字，
+  // 但仍可點擊新增行程，既有行程也會顯示。
   for(let i=0;i<35;i++){
     const d=new Date(gridStart);
     d.setDate(gridStart.getDate()+i);
@@ -199,7 +212,7 @@ function render(){
     if(inCurrentMonth){
       cells+=dayHtml(d,d.getDate());
     }else{
-      cells+='<div class="day empty cross-month-empty" aria-hidden="true"></div>';
+      cells+=crossMonthDayHtml(d);
     }
   }
 
