@@ -1,4 +1,4 @@
-const STORAGE_KEY="featera_calendar_app_v3",OLD_STORAGE_KEY="featera_calendar_app_v2",TITLE_KEY="featera_calendar_title_v1",COUNTRY_KEY="featera_calendar_country_v1";
+const STORAGE_PREFIX="featera_calendar_events_v4_",OLD_STORAGE_KEY="featera_calendar_app_v3",OLDER_STORAGE_KEY="featera_calendar_app_v2",TITLE_PREFIX="featera_calendar_title_v2_",COUNTRY_KEY="featera_calendar_country_v1";
 const state={country:localStorage.getItem(COUNTRY_KEY)||"taiwan",date:new Date(2026,8,1),title:"",customTitle:false,events:[]};
 const countryNames={taiwan:"台灣",xiamen:"中國廈門"};
 
@@ -58,7 +58,6 @@ function normalizeRichEvent(e){
     color:String(line?.color || "#18324d")
   })) : [];
 
-  // 舊版本 desc 自動轉為逐行格式，既有資料不會消失。
   if(!lines.length && String(e?.desc || "").length){
     lines = String(e.desc).split("\n").map(text => ({
       text,
@@ -82,28 +81,79 @@ function normalizeRichEvent(e){
   };
 }
 
-function loadState(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(OLD_STORAGE_KEY);
-    const source = raw ? JSON.parse(raw) : seedEvents.map(e=>({...e}));
-    state.events = Array.isArray(source) ? source.map(normalizeRichEvent) : seedEvents.map(normalizeRichEvent);
-  }catch{
-    state.events = seedEvents.map(normalizeRichEvent);
-  }
+function storageKeyForCountry(country=state.country){
+  return `${STORAGE_PREFIX}${country}`;
+}
 
-  const savedTitle=localStorage.getItem(TITLE_KEY);
+function titleKeyForCountry(country=state.country){
+  return `${TITLE_PREFIX}${country}`;
+}
+
+function getSeedEventsForCountry(country){
+  // 初始範例資料只給中國廈門，避免切換到台灣時看到中國行程。
+  // 台灣預設為空白，國定假日仍由系統自動顯示。
+  if(country==="xiamen"){
+    return seedEvents.map(normalizeRichEvent);
+  }
+  return [];
+}
+
+function loadEventsForCountry(country){
+  try{
+    const raw = localStorage.getItem(storageKeyForCountry(country));
+    if(raw){
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.map(normalizeRichEvent) : [];
+    }
+
+    // 舊版資料只在第一次升級時遷移到「目前當下選定的地區」，
+    // 避免同一批舊行程同時複製到兩個地區。
+    const migrationFlag = localStorage.getItem("featera_region_migration_v4_done");
+    if(!migrationFlag && country===state.country){
+      const oldRaw = localStorage.getItem(OLD_STORAGE_KEY) || localStorage.getItem(OLDER_STORAGE_KEY);
+      if(oldRaw){
+        const parsed = JSON.parse(oldRaw);
+        const migrated = Array.isArray(parsed) ? parsed.map(normalizeRichEvent) : [];
+        localStorage.setItem(storageKeyForCountry(country), JSON.stringify(migrated));
+        localStorage.setItem("featera_region_migration_v4_done","1");
+        return migrated;
+      }
+    }
+
+    const seeded = getSeedEventsForCountry(country);
+    localStorage.setItem(storageKeyForCountry(country), JSON.stringify(seeded));
+    return seeded;
+  }catch{
+    return getSeedEventsForCountry(country);
+  }
+}
+
+function loadTitleForCountry(country){
+  const savedTitle = localStorage.getItem(titleKeyForCountry(country));
   if(savedTitle){
-    state.title=savedTitle;
-    state.customTitle=true;
+    state.title = savedTitle;
+    state.customTitle = true;
   }else{
+    state.customTitle = false;
     updateAutoTitle();
   }
+}
 
-  saveEvents();
+function loadState(){
+  state.events = loadEventsForCountry(state.country);
+  loadTitleForCountry(state.country);
 }
 
 function saveEvents(){
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(state.events));
+  localStorage.setItem(storageKeyForCountry(state.country),JSON.stringify(state.events));
+}
+
+function saveCountryTitle(title){
+  localStorage.setItem(titleKeyForCountry(state.country), title);
+}
+
+function clearCountryTitle(){
+  clearCountryTitle();
 }
 function updateAutoTitle(){if(state.customTitle)return;state.title=`${countryNames[state.country]}${state.date.getFullYear()}年${state.date.getMonth()+1}月行事曆`}
 function getDayMeta(dt){const year=Number(dt.slice(0,4));return HOLIDAY_DATA[state.country]?.[year]?.[dt]||null}
@@ -176,13 +226,21 @@ function eventHtml(e){
   </div>`;
 }
 
-countrySelect.onchange=()=>{state.country=countrySelect.value;localStorage.setItem(COUNTRY_KEY,state.country);if(state.customTitle&&confirm("目前使用自訂大標題。要改回自動標題並套用新地區嗎？")){state.customTitle=false;localStorage.removeItem(TITLE_KEY)}updateAutoTitle();render()};
-yearSelect.onchange=()=>{state.date.setFullYear(Number(yearSelect.value));render()};
+countrySelect.onchange=()=>{
+  state.country=countrySelect.value;
+  localStorage.setItem(COUNTRY_KEY,state.country);
+
+  // 切換到該地區獨立的行程與標題資料
+  state.events=loadEventsForCountry(state.country);
+  loadTitleForCountry(state.country);
+
+  render();
+};yearSelect.onchange=()=>{state.date.setFullYear(Number(yearSelect.value));render()};
 monthSelect.onchange=()=>{state.date.setMonth(Number(monthSelect.value));render()};
 editTitleBtn.onclick=()=>{titleInput.value=state.title;titleModal.classList.remove('hidden')};
 function closeTitle(){titleModal.classList.add('hidden')}
 closeTitleModal.onclick=cancelTitleBtn.onclick=closeTitle;titleModal.onclick=e=>{if(e.target===titleModal)closeTitle()};
-titleForm.onsubmit=e=>{e.preventDefault();const t=titleInput.value.trim();if(!t)return;state.title=t;state.customTitle=true;localStorage.setItem(TITLE_KEY,t);render();closeTitle()};
+titleForm.onsubmit=e=>{e.preventDefault();const t=titleInput.value.trim();if(!t)return;state.title=t;state.customTitle=true;localStorage.setItem(titleKeyForCountry(state.country),t);render();closeTitle()};
 
 function makeTextLineEditorRow(line={},index=0){
   const row=document.createElement("div");
