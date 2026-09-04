@@ -534,3 +534,10 @@ body.platform-android input,body.platform-android select,body.platform-android t
     width:100%;
   }
 }
+
+
+/* 跨月格：保留格子但不顯示任何日期、假日或行程 */
+.day.cross-month-empty{
+  background:#e7e8e9;
+  cursor:default;
+}

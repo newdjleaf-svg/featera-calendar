@@ -153,7 +153,7 @@ function saveCountryTitle(title){
 }
 
 function clearCountryTitle(){
-  clearCountryTitle();
+  localStorage.removeItem(titleKeyForCountry(state.country));
 }
 function updateAutoTitle(){if(state.customTitle)return;state.title=`${countryNames[state.country]}${state.date.getFullYear()}年${state.date.getMonth()+1}月行事曆`}
 function getDayMeta(dt){const year=Number(dt.slice(0,4));return HOLIDAY_DATA[state.country]?.[year]?.[dt]||null}
@@ -174,20 +174,51 @@ function dayHtml(dateObj,label){
 }
 
 function render(){
-  updateAutoTitle();calendarTitle.textContent=state.title;
-  const y=state.date.getFullYear(),m=state.date.getMonth(),first=new Date(y,m,1),mondayIndex=(first.getDay()+6)%7;
+  updateAutoTitle();
+  calendarTitle.textContent=state.title;
+
+  const y=state.date.getFullYear();
+  const m=state.date.getMonth();
+  const first=new Date(y,m,1);
+  const mondayIndex=(first.getDay()+6)%7;
   const gridStart=new Date(y,m,1-mondayIndex);
+
   let cells="";
-  // 固定 7 x 5 = 35 格。從包含當月1號的星期一開始連續顯示35天。
+
+  // 固定 7 x 5 = 35 格。
+  // 僅顯示「目前選擇月份」的日期。
+  // 月初之前及月底之後的跨月日期全部留白。
   for(let i=0;i<35;i++){
-    const d=new Date(gridStart);d.setDate(gridStart.getDate()+i);
-    const inCurrentMonth=d.getMonth()===m;
-    const label=inCurrentMonth?d.getDate():`${d.getMonth()+1}/${d.getDate()}`;
-    cells+=dayHtml(d,label);
+    const d=new Date(gridStart);
+    d.setDate(gridStart.getDate()+i);
+
+    const inCurrentMonth =
+      d.getFullYear()===y &&
+      d.getMonth()===m;
+
+    if(inCurrentMonth){
+      cells+=dayHtml(d,d.getDate());
+    }else{
+      cells+='<div class="day empty cross-month-empty" aria-hidden="true"></div>';
+    }
   }
+
   calendarGrid.innerHTML=cells;
-  document.querySelectorAll('.day[data-date]').forEach(el=>el.onclick=e=>{if(!e.target.closest('.event'))openEventModal(null,el.dataset.date)});
-  document.querySelectorAll('.event[data-id]').forEach(el=>el.onclick=e=>{e.stopPropagation();openEventModal(el.dataset.id)});
+
+  document.querySelectorAll('.day[data-date]').forEach(el=>{
+    el.onclick=e=>{
+      if(!e.target.closest('.event')){
+        openEventModal(null,el.dataset.date);
+      }
+    };
+  });
+
+  document.querySelectorAll('.event[data-id]').forEach(el=>{
+    el.onclick=e=>{
+      e.stopPropagation();
+      openEventModal(el.dataset.id);
+    };
+  });
 }
 
 function styleTextLine(line){
@@ -240,7 +271,7 @@ monthSelect.onchange=()=>{state.date.setMonth(Number(monthSelect.value));render(
 editTitleBtn.onclick=()=>{titleInput.value=state.title;titleModal.classList.remove('hidden')};
 function closeTitle(){titleModal.classList.add('hidden')}
 closeTitleModal.onclick=cancelTitleBtn.onclick=closeTitle;titleModal.onclick=e=>{if(e.target===titleModal)closeTitle()};
-titleForm.onsubmit=e=>{e.preventDefault();const t=titleInput.value.trim();if(!t)return;state.title=t;state.customTitle=true;localStorage.setItem(titleKeyForCountry(state.country),t);render();closeTitle()};
+titleForm.onsubmit=e=>{e.preventDefault();const t=titleInput.value.trim();if(!t)return;state.title=t;state.customTitle=true;saveCountryTitle(t);render();closeTitle()};
 
 function makeTextLineEditorRow(line={},index=0){
   const row=document.createElement("div");
