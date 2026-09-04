@@ -1,0 +1,314 @@
+*{box-sizing:border-box}:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","Microsoft JhengHei",Arial,sans-serif;color:#15233a;background:#eef2f4}body{margin:0;background:#eef2f4}button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:none!important}.app-shell{width:100%;min-height:100vh;padding:18px}.control-panel{width:min(1600px,100%);margin:0 auto 14px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 4px 18px #00000012}.control-row{display:flex;align-items:end;justify-content:space-between;gap:14px;flex-wrap:wrap}.control-group{display:flex;align-items:end;gap:10px;flex-wrap:wrap}.control-group label{display:grid;gap:6px;font-size:13px;font-weight:800;color:#52616d}.control-group select{min-width:120px}.control-panel select,.control-panel input{border:1px solid #d4dce1;border-radius:8px;padding:8px 10px;background:#fff}.status-line{font-size:12px;color:#7a8790;margin-top:10px}.btn{border:1px solid #d4dde3;background:#fff;color:#3a4e5b;border-radius:9px;padding:9px 14px;font-weight:800}.btn:hover{background:#f3f6f8}.btn.primary{background:#2f6ea4;border-color:#2f6ea4;color:#fff}.btn.dark{background:#243b4d;border-color:#243b4d;color:#fff}.btn.danger{background:#f6dfdf;border-color:#f0cdcd;color:#a62d2d}.calendar-canvas{width:min(1600px,100%);aspect-ratio:16/9;margin:0 auto;background:#f7efde;position:relative;overflow:hidden;padding:18px 14px 14px;box-shadow:0 14px 36px #00000012}.decor{position:absolute;pointer-events:none;z-index:0}.decor-a{width:48%;height:46%;left:-10%;top:-10%;background:#bee8df;border-radius:46% 54% 58% 42%;transform:rotate(-12deg)}.decor-b{width:42%;height:55%;right:-8%;top:-4%;background:#f5d8a1;border-radius:58% 42% 45% 55%;transform:rotate(12deg)}.arc{border:5px solid #666;border-radius:50%;background:transparent;opacity:.7}.arc-a{width:500px;height:500px;right:-250px;top:-210px}.arc-b{width:450px;height:450px;left:-160px;bottom:-280px}.calendar-header,.weekdays,.calendar-grid{position:relative;z-index:1}.calendar-header{height:12%;display:grid;grid-template-columns:31% 1fr 31%;align-items:center}.featera-logo{font-style:italic;font-weight:1000;letter-spacing:-7px;font-size:clamp(34px,4vw,64px);line-height:1;text-shadow:-3px -3px 0 #fff,3px -3px 0 #fff,-3px 3px 0 #fff,3px 3px 0 #fff;white-space:nowrap}.logo-green{color:#13823e}.logo-orange{color:#f06b21}.calendar-title{margin:0;text-align:center;font-weight:1000;line-height:1.08;font-size:clamp(28px,3.2vw,52px);letter-spacing:.5px;color:#9b6818;text-shadow:-2px -2px 0 #fff,2px -2px 0 #fff,-2px 2px 0 #fff,2px 2px 0 #fff;white-space:nowrap}.weekdays,.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px}.weekdays{height:6%;margin-bottom:10px}.weekdays div{display:flex;align-items:center;justify-content:center;background:#356d9f;color:#fff;font-size:clamp(14px,1.45vw,25px);font-weight:900;text-shadow:0 1px 1px #0005}.calendar-grid{height:80%;grid-template-rows:repeat(5,minmax(0,1fr))}.day{min-width:0;min-height:0;background:#e7e8e9;position:relative;overflow:hidden;padding:7px 8px}.day.weekend{background:#efb8ba}.day.today{outline:3px solid #e0a92a;outline-offset:-3px}.date-num{font-size:clamp(13px,1.35vw,23px);color:#111;line-height:1;position:relative;z-index:3}.day.weekend .date-num{color:#ac1d1d}.event{position:absolute;inset:0;padding:7px 8px;display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden;cursor:pointer}.event.green{background:#a9e5bd}.event.purple{background:#ebc4ea}.event.pink{background:#efb8ba}.event.gray{background:#e7e8e9}.event.blue{background:#b9d9ef}.event-time{text-align:center;font-weight:800;margin-top:2px;margin-bottom:2px}.event-title{text-align:center;font-weight:1000;line-height:1.08;margin-top:2px;color:#102343;text-shadow:0 1px #fff9}.event-desc{white-space:pre-line;line-height:1.34;font-weight:800;margin-top:6px;color:#18324d;overflow-wrap:anywhere}.event.pink .event-title,.event.pink .event-desc{color:#9b1818}.event.purple .event-title,.event.purple .event-desc{color:#6c258a}.modal{position:fixed;inset:0;z-index:100;background:#13232d88;display:grid;place-items:center;padding:20px}.modal-card{width:min(680px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:16px;box-shadow:0 24px 70px #0004}.modal-card.small{width:min(450px,100%)}.modal-header{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid #e5eaed}.modal-header h2{margin:0}.icon-btn{width:38px;height:38px;border:0;background:none;font-size:30px;color:#74818a}#eventForm,#titleForm{padding:20px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.form-grid .full{grid-column:1/-1}.form-grid label,#titleForm label{display:grid;gap:6px;font-weight:800;color:#52616c}.form-grid input,.form-grid select,.form-grid textarea,#titleForm input{width:100%;border:1px solid #ced7dc;border-radius:8px;padding:10px 11px;background:#fff}textarea{resize:vertical}.modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}.modal-actions.split{justify-content:space-between}.right-actions{display:flex;gap:9px;margin-left:auto}@media(max-width:620px){.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}.control-row{align-items:stretch}.control-group.actions{width:100%}.control-group.actions .btn{flex:1}}
+
+.day.weekend{
+  background:#efb8ba;
+}
+
+.day.holiday{
+  background:#efb8ba;
+}
+
+.day.makeup-workday{
+  background:#e7e8e9;
+  outline:3px solid #6f8798;
+  outline-offset:-3px;
+}
+
+.holiday-label{
+  position:absolute;
+  right:6px;
+  top:6px;
+  z-index:5;
+  max-width:72%;
+  padding:3px 6px;
+  border-radius:6px;
+  font-size:clamp(9px,.72vw,13px);
+  line-height:1.15;
+  font-weight:900;
+  text-align:right;
+  pointer-events:none;
+}
+
+.holiday-label.holiday{
+  color:#a11616;
+  background:#fff4f4cc;
+}
+
+.holiday-label.workday{
+  color:#29485d;
+  background:#eef5f8e8;
+}
+
+/* === Mobile / iOS / Android adaptations === */
+html,body{min-height:100%;}
+body{padding-bottom:env(safe-area-inset-bottom,0px)}
+.calendar-scroll{width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+.mobile-action{display:none}
+
+.preview-card{width:min(920px,96vw)}
+.preview-body{padding:16px 18px 20px}
+.preview-hint{margin:0 0 12px;color:#566771;font-size:14px;line-height:1.5}
+#previewImage{display:block;width:100%;height:auto;border-radius:10px;background:#eee;box-shadow:0 6px 22px #0002;-webkit-touch-callout:default;user-select:auto}
+.preview-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+
+/* iPhone / iPad：Frosted Glass + safe areas */
+body.platform-ios{
+  background:#edf1f4;
+  -webkit-tap-highlight-color:transparent;
+}
+body.platform-ios .app-shell{
+  padding-left:max(10px,env(safe-area-inset-left));
+  padding-right:max(10px,env(safe-area-inset-right));
+  padding-top:max(10px,env(safe-area-inset-top));
+  padding-bottom:calc(104px + env(safe-area-inset-bottom));
+}
+body.platform-ios .control-panel{
+  position:relative;
+  border-radius:20px;
+  background:rgba(255,255,255,.78);
+  -webkit-backdrop-filter:blur(18px) saturate(150%);
+  backdrop-filter:blur(18px) saturate(150%);
+  border:1px solid rgba(255,255,255,.65);
+}
+body.platform-ios .control-group.actions{
+  position:fixed;
+  z-index:80;
+  left:max(10px,env(safe-area-inset-left));
+  right:max(10px,env(safe-area-inset-right));
+  bottom:max(10px,env(safe-area-inset-bottom));
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:7px;
+  padding:9px;
+  border-radius:22px;
+  background:rgba(248,250,252,.88);
+  -webkit-backdrop-filter:blur(22px) saturate(160%);
+  backdrop-filter:blur(22px) saturate(160%);
+  box-shadow:0 8px 30px #0003;
+}
+body.platform-ios .control-group.actions .btn{
+  min-width:0;
+  padding:10px 7px;
+  border-radius:14px;
+  font-size:12px;
+  white-space:nowrap;
+}
+body.platform-ios .mobile-action{display:block}
+body.platform-ios .control-panel select{font-size:16px;border-radius:12px}
+body.platform-ios .modal{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+body.platform-ios .modal-card{border-radius:22px}
+body.platform-ios input,body.platform-ios select,body.platform-ios textarea{font-size:16px}
+
+/* Android：Material-like controls */
+body.platform-android{
+  background:#eef2f4;
+  -webkit-tap-highlight-color:rgba(47,110,164,.12);
+}
+body.platform-android .app-shell{
+  padding:12px 10px 98px;
+}
+body.platform-android .control-panel{
+  border-radius:16px;
+  box-shadow:0 3px 10px #0002;
+}
+body.platform-android .control-group.actions{
+  position:fixed;
+  z-index:80;
+  left:8px;
+  right:8px;
+  bottom:8px;
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:6px;
+  padding:8px;
+  background:#fff;
+  border-radius:16px;
+  box-shadow:0 8px 28px #0004;
+}
+body.platform-android .control-group.actions .btn{
+  min-width:0;
+  padding:11px 5px;
+  border-radius:10px;
+  font-size:12px;
+  white-space:nowrap;
+}
+body.platform-android .mobile-action{display:block}
+body.platform-android .btn.primary{box-shadow:0 2px 6px #2f6ea455}
+body.platform-android input,body.platform-android select,body.platform-android textarea{font-size:16px}
+
+/* Phone layout: the edit UI is responsive, while the poster stays landscape. */
+@media(max-width:760px){
+  .status-line{display:none}
+  .control-panel{padding:10px;margin-bottom:10px}
+  .control-row{display:block}
+  .control-group:not(.actions){display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:7px}
+  .control-group label{font-size:11px}
+  .control-group select{width:100%;min-width:0;padding:8px 6px}
+  .calendar-scroll{border-radius:10px;background:#dde3e6;box-shadow:inset 0 0 0 1px #0000000b}
+  .calendar-canvas{width:1100px;max-width:none;height:618.75px;aspect-ratio:auto;box-shadow:none}
+  .calendar-header{height:12%}
+  .weekdays{height:6%}
+  .calendar-grid{height:80%;grid-template-rows:repeat(5,minmax(0,1fr))}
+  .featera-logo{font-size:46px}
+  .calendar-title{font-size:35px}
+  .weekdays div{font-size:17px}
+  .date-num{font-size:16px}
+  .holiday-label{font-size:9px;max-width:75%}
+  .modal{align-items:end;padding:0}
+  .modal-card,.modal-card.small,.preview-card{width:100%;max-height:92dvh;border-radius:20px 20px 0 0}
+  .modal-header{position:sticky;top:0;z-index:2;background:#fff}
+  #eventForm,#titleForm{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+  .preview-body{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+  .preview-actions{display:grid;grid-template-columns:1fr 1fr}
+}
+
+@media(orientation:landscape) and (max-height:520px){
+  body.platform-ios .control-group.actions,
+  body.platform-android .control-group.actions{
+    grid-template-columns:repeat(5,1fr);
+    left:12px;right:12px;bottom:6px;
+  }
+  .calendar-canvas{width:1000px;height:562.5px}
+}
+
+
+/* =========================================================
+   Mobile control panel FIX v2
+   - Selectors and action buttons are separated into two rows.
+   - No fixed/floating toolbar can overlap country/year/month.
+   - Applies to both iOS and Android.
+   ========================================================= */
+
+@media(max-width:760px){
+
+  /* Give the page normal document flow again. */
+  body.platform-ios .app-shell,
+  body.platform-android .app-shell{
+    padding-top:max(10px,env(safe-area-inset-top));
+    padding-left:max(10px,env(safe-area-inset-left));
+    padding-right:max(10px,env(safe-area-inset-right));
+    padding-bottom:max(18px,env(safe-area-inset-bottom));
+  }
+
+  .control-panel{
+    position:relative;
+    z-index:20;
+    overflow:visible;
+    margin-bottom:10px;
+    padding:12px;
+  }
+
+  .control-row{
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:10px;
+  }
+
+  /* Top row: region / year / month only */
+  .control-group:not(.actions){
+    width:100%;
+    display:grid;
+    grid-template-columns:minmax(0,1.35fr) minmax(0,.9fr) minmax(0,.9fr);
+    gap:8px;
+    align-items:end;
+    position:relative;
+    z-index:22;
+  }
+
+  .control-group:not(.actions) label{
+    min-width:0;
+    display:grid;
+    grid-template-rows:auto 44px;
+    gap:5px;
+    font-size:12px;
+    line-height:1.2;
+  }
+
+  .control-group:not(.actions) select{
+    width:100%;
+    min-width:0;
+    height:44px;
+    padding:0 8px;
+    font-size:16px;
+    position:relative;
+    z-index:23;
+    touch-action:manipulation;
+  }
+
+  /* Second row: actions. Explicitly NOT fixed. */
+  body.platform-ios .control-group.actions,
+  body.platform-android .control-group.actions,
+  .control-group.actions{
+    position:static !important;
+    inset:auto !important;
+    left:auto !important;
+    right:auto !important;
+    bottom:auto !important;
+    top:auto !important;
+    width:100%;
+    display:grid;
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:7px;
+    padding:0;
+    margin:0;
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+    z-index:auto;
+  }
+
+  body.platform-ios .control-group.actions .btn,
+  body.platform-android .control-group.actions .btn,
+  .control-group.actions .btn{
+    width:100%;
+    min-width:0;
+    min-height:42px;
+    padding:8px 4px;
+    border-radius:10px;
+    font-size:11px;
+    line-height:1.15;
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+
+  .mobile-action{
+    display:block;
+  }
+
+  /* Keep the poster below the entire control panel. */
+  .calendar-scroll{
+    position:relative;
+    z-index:1;
+    margin-top:0;
+  }
+}
+
+/* Extra narrow phones: country gets its own row, year/month below it. */
+@media(max-width:430px){
+  .control-group:not(.actions){
+    grid-template-columns:1fr 1fr;
+  }
+
+  .control-group:not(.actions) label:first-child{
+    grid-column:1 / -1;
+  }
+
+  .control-group.actions{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+
+  .control-group.actions .btn:nth-child(4),
+  .control-group.actions .btn:nth-child(5){
+    grid-column:auto;
+  }
+}
+
+/* Very narrow devices */
+@media(max-width:360px){
+  .control-group.actions{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
