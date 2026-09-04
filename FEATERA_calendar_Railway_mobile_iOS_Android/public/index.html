@@ -71,10 +71,39 @@
           <label>顏色類型<select id="eventColor"><option value="green">綠色－課程／講堂</option><option value="purple">紫色－大型活動</option><option value="pink">粉色－假期／休息</option><option value="gray">灰色－其他</option><option value="blue">藍色－公告</option></select></label>
           <label>開始時間<input id="eventStart" type="time"></label>
           <label>結束時間<input id="eventEnd" type="time"></label>
-          <label class="full">行程標題<input id="eventTitle" type="text" maxlength="80" required placeholder="例如：幸福講堂"></label>
-          <label class="full">行程內容<textarea id="eventDesc" rows="6" maxlength="1000" placeholder="主持、主講、地點、備註等"></textarea></label>
-          <label>標題字體大小<input id="eventTitleSize" type="number" min="12" max="36" value="18"></label>
-          <label>內容字體大小<input id="eventDescSize" type="number" min="10" max="30" value="14"></label>
+          <div class="full rich-title-section">
+            <label>行程標題（可留空）
+              <input id="eventTitle" type="text" maxlength="80" placeholder="例如：幸福講堂（非必填）">
+            </label>
+            <div class="format-toolbar title-format-toolbar">
+              <label>大小
+                <input id="eventTitleSize" type="number" min="10" max="40" value="18">
+              </label>
+              <label>對齊
+                <select id="eventTitleAlign">
+                  <option value="left">靠左</option>
+                  <option value="center" selected>置中</option>
+                  <option value="right">靠右</option>
+                </select>
+              </label>
+              <label>顏色
+                <input id="eventTitleColor" type="color" value="#102343">
+              </label>
+              <label class="toggle-format"><input id="eventTitleBold" type="checkbox" checked> 粗體</label>
+              <label class="toggle-format"><input id="eventTitleItalic" type="checkbox"> 斜體</label>
+            </div>
+          </div>
+
+          <div class="full line-editor-section">
+            <div class="line-editor-heading">
+              <div>
+                <strong>行程文字內容</strong>
+                <small>每一行可獨立設定大小、對齊、粗體、斜體及顏色</small>
+              </div>
+              <button id="addTextLineBtn" class="btn mini primary" type="button">＋ 新增文字行</button>
+            </div>
+            <div id="textLinesEditor" class="text-lines-editor"></div>
+          </div>
         </div>
         <div class="modal-actions split"><button id="deleteEventBtn" class="btn danger hidden" type="button">刪除行程</button><div class="right-actions"><button id="cancelEventBtn" class="btn" type="button">取消</button><button class="btn primary" type="submit">確認儲存</button></div></div>
       </form>

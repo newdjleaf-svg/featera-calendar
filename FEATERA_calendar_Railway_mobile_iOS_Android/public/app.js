@@ -1,4 +1,4 @@
-const STORAGE_KEY="featera_calendar_app_v2",TITLE_KEY="featera_calendar_title_v1",COUNTRY_KEY="featera_calendar_country_v1";
+const STORAGE_KEY="featera_calendar_app_v3",OLD_STORAGE_KEY="featera_calendar_app_v2",TITLE_KEY="featera_calendar_title_v1",COUNTRY_KEY="featera_calendar_country_v1";
 const state={country:localStorage.getItem(COUNTRY_KEY)||"taiwan",date:new Date(2026,8,1),title:"",customTitle:false,events:[]};
 const countryNames={taiwan:"台灣",xiamen:"中國廈門"};
 
@@ -44,8 +44,67 @@ const HOLIDAY_DATA={
 
 const $=id=>document.getElementById(id),pad=n=>String(n).padStart(2,"0"),iso=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function loadState(){try{const raw=localStorage.getItem(STORAGE_KEY);state.events=raw?JSON.parse(raw):seedEvents.map(e=>({...e}))}catch{state.events=seedEvents.map(e=>({...e}))}const savedTitle=localStorage.getItem(TITLE_KEY);if(savedTitle){state.title=savedTitle;state.customTitle=true}else updateAutoTitle()}
-function saveEvents(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state.events))}
+function normalizeRichEvent(e){
+  const title = String(e?.title ?? "");
+  const titleSize = Number(e?.titleSize) || 18;
+  const descSize = Number(e?.descSize) || 14;
+
+  let lines = Array.isArray(e?.lines) ? e.lines.map(line => ({
+    text:String(line?.text ?? ""),
+    size:Number(line?.size) || descSize,
+    align:["left","center","right"].includes(line?.align) ? line.align : "left",
+    bold:line?.bold !== false,
+    italic:!!line?.italic,
+    color:String(line?.color || "#18324d")
+  })) : [];
+
+  // 舊版本 desc 自動轉為逐行格式，既有資料不會消失。
+  if(!lines.length && String(e?.desc || "").length){
+    lines = String(e.desc).split("\n").map(text => ({
+      text,
+      size:descSize,
+      align:"left",
+      bold:true,
+      italic:false,
+      color:"#18324d"
+    }));
+  }
+
+  return {
+    ...e,
+    title,
+    titleSize,
+    titleAlign:["left","center","right"].includes(e?.titleAlign) ? e.titleAlign : "center",
+    titleBold:e?.titleBold !== false,
+    titleItalic:!!e?.titleItalic,
+    titleColor:String(e?.titleColor || "#102343"),
+    lines
+  };
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(OLD_STORAGE_KEY);
+    const source = raw ? JSON.parse(raw) : seedEvents.map(e=>({...e}));
+    state.events = Array.isArray(source) ? source.map(normalizeRichEvent) : seedEvents.map(normalizeRichEvent);
+  }catch{
+    state.events = seedEvents.map(normalizeRichEvent);
+  }
+
+  const savedTitle=localStorage.getItem(TITLE_KEY);
+  if(savedTitle){
+    state.title=savedTitle;
+    state.customTitle=true;
+  }else{
+    updateAutoTitle();
+  }
+
+  saveEvents();
+}
+
+function saveEvents(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(state.events));
+}
 function updateAutoTitle(){if(state.customTitle)return;state.title=`${countryNames[state.country]}${state.date.getFullYear()}年${state.date.getMonth()+1}月行事曆`}
 function getDayMeta(dt){const year=Number(dt.slice(0,4));return HOLIDAY_DATA[state.country]?.[year]?.[dt]||null}
 function populateSelectors(){yearSelect.innerHTML="";monthSelect.innerHTML="";for(let y=2024;y<=2035;y++)yearSelect.add(new Option(`${y}年`,y));for(let m=1;m<=12;m++)monthSelect.add(new Option(`${m}月`,m-1));yearSelect.value=state.date.getFullYear();monthSelect.value=state.date.getMonth();countrySelect.value=state.country}
@@ -81,7 +140,41 @@ function render(){
   document.querySelectorAll('.event[data-id]').forEach(el=>el.onclick=e=>{e.stopPropagation();openEventModal(el.dataset.id)});
 }
 
-function eventHtml(e){const titleSize=Math.min(Math.max(Number(e.titleSize)||18,12),36),descSize=Math.min(Math.max(Number(e.descSize)||14,10),30),time=e.start?`${e.start}${e.end?" - "+e.end:""}`:"";return `<div class="event ${escapeHtml(e.color||"green")}" data-id="${escapeHtml(e.id)}">${time?`<div class="event-time" style="font-size:${Math.max(descSize-1,10)}px">${escapeHtml(time)}</div>`:""}<div class="event-title" style="font-size:${titleSize}px">${escapeHtml(e.title)}</div>${e.desc?`<div class="event-desc" style="font-size:${descSize}px">${escapeHtml(e.desc)}</div>`:""}</div>`}
+function styleTextLine(line){
+  return [
+    `font-size:${Math.min(Math.max(Number(line.size)||14,8),42)}px`,
+    `text-align:${["left","center","right"].includes(line.align)?line.align:"left"}`,
+    `font-weight:${line.bold?"800":"400"}`,
+    `font-style:${line.italic?"italic":"normal"}`,
+    `color:${/^#[0-9a-fA-F]{6}$/.test(line.color||"")?line.color:"#18324d"}`
+  ].join(";");
+}
+
+function eventHtml(e){
+  const ev = normalizeRichEvent(e);
+  const time = ev.start ? `${ev.start}${ev.end?" - "+ev.end:""}` : "";
+
+  const titleHtml = ev.title
+    ? `<div class="event-title rich-event-title" style="${[
+        `font-size:${Math.min(Math.max(Number(ev.titleSize)||18,8),42)}px`,
+        `text-align:${ev.titleAlign}`,
+        `font-weight:${ev.titleBold?"900":"400"}`,
+        `font-style:${ev.titleItalic?"italic":"normal"}`,
+        `color:${/^#[0-9a-fA-F]{6}$/.test(ev.titleColor||"")?ev.titleColor:"#102343"}`
+      ].join(";")}">${escapeHtml(ev.title)}</div>`
+    : "";
+
+  const linesHtml = ev.lines
+    .filter(line => String(line.text ?? "").length > 0)
+    .map(line => `<div class="event-rich-line" style="${styleTextLine(line)}">${escapeHtml(line.text)}</div>`)
+    .join("");
+
+  return `<div class="event ${escapeHtml(ev.color||"green")}" data-id="${escapeHtml(ev.id)}">
+    ${time?`<div class="event-time" style="font-size:12px">${escapeHtml(time)}</div>`:""}
+    ${titleHtml}
+    ${linesHtml}
+  </div>`;
+}
 
 countrySelect.onchange=()=>{state.country=countrySelect.value;localStorage.setItem(COUNTRY_KEY,state.country);if(state.customTitle&&confirm("目前使用自訂大標題。要改回自動標題並套用新地區嗎？")){state.customTitle=false;localStorage.removeItem(TITLE_KEY)}updateAutoTitle();render()};
 yearSelect.onchange=()=>{state.date.setFullYear(Number(yearSelect.value));render()};
@@ -91,11 +184,158 @@ function closeTitle(){titleModal.classList.add('hidden')}
 closeTitleModal.onclick=cancelTitleBtn.onclick=closeTitle;titleModal.onclick=e=>{if(e.target===titleModal)closeTitle()};
 titleForm.onsubmit=e=>{e.preventDefault();const t=titleInput.value.trim();if(!t)return;state.title=t;state.customTitle=true;localStorage.setItem(TITLE_KEY,t);render();closeTitle()};
 
-function openEventModal(id,date){const ev=id?state.events.find(x=>x.id===id):null;eventModalTitle.textContent=ev?"修改行程":"新增行程";eventId.value=ev?.id||"";eventDate.value=ev?.date||date||iso(state.date.getFullYear(),state.date.getMonth(),1);eventColor.value=ev?.color||"green";eventStart.value=ev?.start||"";eventEnd.value=ev?.end||"";eventTitle.value=ev?.title||"";eventDesc.value=ev?.desc||"";eventTitleSize.value=ev?.titleSize||18;eventDescSize.value=ev?.descSize||14;deleteEventBtn.classList.toggle('hidden',!ev);eventModal.classList.remove('hidden')}
-function closeEvent(){eventModal.classList.add('hidden')}
-addEventBtn.onclick=()=>openEventModal();closeEventModal.onclick=cancelEventBtn.onclick=closeEvent;eventModal.onclick=e=>{if(e.target===eventModal)closeEvent()};
-eventForm.onsubmit=e=>{e.preventDefault();const oldId=eventId.value.trim(),id=oldId||crypto.randomUUID(),obj={id,date:eventDate.value,color:eventColor.value,start:eventStart.value,end:eventEnd.value,title:eventTitle.value.trim(),desc:eventDesc.value.trim(),titleSize:Number(eventTitleSize.value)||18,descSize:Number(eventDescSize.value)||14};if(!obj.date||!obj.title)return alert("請完整填寫日期與行程標題。");if(obj.start&&obj.end&&obj.end<obj.start)return alert("結束時間不能早於開始時間。");const idx=state.events.findIndex(x=>x.id===oldId);idx>=0?state.events[idx]=obj:state.events.push(obj);saveEvents();render();closeEvent()};
-deleteEventBtn.onclick=()=>{const id=eventId.value;if(id&&confirm("確定要刪除此行程嗎？")){state.events=state.events.filter(e=>e.id!==id);saveEvents();render();closeEvent()}};
+function makeTextLineEditorRow(line={},index=0){
+  const row=document.createElement("div");
+  row.className="text-line-row";
+  row.innerHTML=`
+    <div class="text-line-main">
+      <span class="text-line-number">${index+1}</span>
+      <input class="text-line-input" type="text" maxlength="180" placeholder="輸入第 ${index+1} 行文字">
+      <button class="remove-line-btn" type="button" title="刪除此行">×</button>
+    </div>
+    <div class="text-line-format">
+      <label>大小
+        <input class="line-size" type="number" min="8" max="42" value="${Number(line.size)||14}">
+      </label>
+      <label>對齊
+        <select class="line-align">
+          <option value="left">靠左</option>
+          <option value="center">置中</option>
+          <option value="right">靠右</option>
+        </select>
+      </label>
+      <label>顏色
+        <input class="line-color" type="color" value="${/^#[0-9a-fA-F]{6}$/.test(line.color||"")?line.color:"#18324d"}">
+      </label>
+      <label class="toggle-format"><input class="line-bold" type="checkbox"> 粗體</label>
+      <label class="toggle-format"><input class="line-italic" type="checkbox"> 斜體</label>
+    </div>`;
+
+  row.querySelector(".text-line-input").value=String(line.text??"");
+  row.querySelector(".line-align").value=["left","center","right"].includes(line.align)?line.align:"left";
+  row.querySelector(".line-bold").checked=line.bold!==false;
+  row.querySelector(".line-italic").checked=!!line.italic;
+
+  row.querySelector(".remove-line-btn").onclick=()=>{
+    row.remove();
+    renumberTextLines();
+    if(!textLinesEditor.children.length)addTextLine({});
+  };
+
+  return row;
+}
+
+function renumberTextLines(){
+  [...textLinesEditor.querySelectorAll(".text-line-row")].forEach((row,i)=>{
+    row.querySelector(".text-line-number").textContent=i+1;
+    row.querySelector(".text-line-input").placeholder=`輸入第 ${i+1} 行文字`;
+  });
+}
+
+function addTextLine(line={}){
+  textLinesEditor.appendChild(makeTextLineEditorRow(line,textLinesEditor.children.length));
+}
+
+function collectTextLines(){
+  return [...textLinesEditor.querySelectorAll(".text-line-row")].map(row=>({
+    text:row.querySelector(".text-line-input").value,
+    size:Number(row.querySelector(".line-size").value)||14,
+    align:row.querySelector(".line-align").value,
+    bold:row.querySelector(".line-bold").checked,
+    italic:row.querySelector(".line-italic").checked,
+    color:row.querySelector(".line-color").value
+  })).filter(line=>line.text.length>0);
+}
+
+addTextLineBtn.onclick=()=>addTextLine({text:"",size:14,align:"left",bold:true,italic:false,color:"#18324d"});
+
+function openEventModal(id,date){
+  const ev=id?normalizeRichEvent(state.events.find(x=>x.id===id)):null;
+  eventModalTitle.textContent=ev?"修改行程":"新增行程";
+  eventId.value=ev?.id||"";
+  eventDate.value=ev?.date||date||iso(state.date.getFullYear(),state.date.getMonth(),1);
+  eventColor.value=ev?.color||"green";
+  eventStart.value=ev?.start||"";
+  eventEnd.value=ev?.end||"";
+  eventTitle.value=ev?.title||"";
+
+  eventTitleSize.value=ev?.titleSize||18;
+  eventTitleAlign.value=ev?.titleAlign||"center";
+  eventTitleBold.checked=ev?.titleBold!==false;
+  eventTitleItalic.checked=!!ev?.titleItalic;
+  eventTitleColor.value=/^#[0-9a-fA-F]{6}$/.test(ev?.titleColor||"")?ev.titleColor:"#102343";
+
+  textLinesEditor.innerHTML="";
+  const lines=ev?.lines?.length?ev.lines:[{text:"",size:14,align:"left",bold:true,italic:false,color:"#18324d"}];
+  lines.forEach(addTextLine);
+
+  deleteEventBtn.classList.toggle("hidden",!ev);
+  eventModal.classList.remove("hidden");
+}
+
+function closeEvent(){
+  eventModal.classList.add("hidden");
+}
+
+addEventBtn.onclick=()=>openEventModal();
+closeEventModal.onclick=cancelEventBtn.onclick=closeEvent;
+eventModal.onclick=e=>{if(e.target===eventModal)closeEvent()};
+
+eventForm.onsubmit=e=>{
+  e.preventDefault();
+
+  const oldId=eventId.value.trim();
+  const id=oldId||crypto.randomUUID();
+
+  const obj=normalizeRichEvent({
+    id,
+    date:eventDate.value,
+    color:eventColor.value,
+    start:eventStart.value,
+    end:eventEnd.value,
+    title:eventTitle.value.trim(),
+    titleSize:Number(eventTitleSize.value)||18,
+    titleAlign:eventTitleAlign.value,
+    titleBold:eventTitleBold.checked,
+    titleItalic:eventTitleItalic.checked,
+    titleColor:eventTitleColor.value,
+    lines:collectTextLines()
+  });
+
+  if(!obj.date){
+    alert("請選擇日期。");
+    return;
+  }
+
+  // 標題改為非必填；只要標題或至少一行內容有文字，就可儲存。
+  if(!obj.title && !obj.lines.length){
+    alert("行程標題可以留空，但請至少輸入一行行程內容。");
+    return;
+  }
+
+  if(obj.start&&obj.end&&obj.end<obj.start){
+    alert("結束時間不能早於開始時間。");
+    return;
+  }
+
+  const idx=state.events.findIndex(x=>x.id===oldId);
+  if(idx>=0)state.events[idx]=obj;
+  else state.events.push(obj);
+
+  saveEvents();
+  render();
+  closeEvent();
+};
+
+deleteEventBtn.onclick=()=>{
+  const id=eventId.value;
+  if(id&&confirm("確定要刪除此行程嗎？")){
+    state.events=state.events.filter(e=>e.id!==id);
+    saveEvents();
+    render();
+    closeEvent();
+  }
+};
 
 exportBtn.onclick=async()=>{exportBtn.disabled=true;exportBtn.textContent="產生 PNG…";try{if(typeof html2canvas==="undefined")throw new Error();const target=captureArea,canvas=await html2canvas(target,{scale:2,backgroundColor:"#f7efde",useCORS:true,logging:false,width:target.clientWidth,height:target.clientHeight});const a=document.createElement('a');a.download=`${state.title}.png`;a.href=canvas.toDataURL('image/png');document.body.appendChild(a);a.click();a.remove()}catch{alert("PNG 匯出失敗，請確認瀏覽器下載權限與網路連線。") }finally{exportBtn.disabled=false;exportBtn.textContent="匯出 PNG"}};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!titleModal.classList.contains('hidden'))closeTitle();if(!eventModal.classList.contains('hidden'))closeEvent()}});
