@@ -1,0 +1,1573 @@
+{
+  "source": "課程行事曆安排(1).xlsx",
+  "lecturers": [
+    {
+      "id": "LX1",
+      "name": "黃致堯",
+      "rank": "",
+      "stars": 0,
+      "special": true,
+      "note": "總經理",
+      "seminarQualified": true,
+      "seniority": "",
+      "regions": []
+    },
+    {
+      "id": "LX2",
+      "name": "陳沛瑩",
+      "rank": "",
+      "stars": 3,
+      "special": false,
+      "note": "三星講師",
+      "seminarQualified": true,
+      "seniority": "",
+      "regions": []
+    },
+    {
+      "id": "LX3",
+      "name": "陳乃慧",
+      "rank": "",
+      "stars": 3,
+      "special": false,
+      "note": "三星講師",
+      "seminarQualified": true,
+      "seniority": "",
+      "regions": []
+    },
+    {
+      "id": "LX4",
+      "name": "陳建和",
+      "rank": "",
+      "stars": 3,
+      "special": false,
+      "note": "三星講師",
+      "seminarQualified": true,
+      "seniority": "2024.10晉升三星講師-年資自2024.11計算\n2021.01晉升二星講師",
+      "regions": []
+    },
+    {
+      "id": "LX5",
+      "name": "賴學弘",
+      "rank": "",
+      "stars": 2,
+      "special": false,
+      "note": "二星講師",
+      "seminarQualified": true,
+      "seniority": "2022.10(大約)晉升二星講師\n2020.05擔任一星講師",
+      "regions": []
+    },
+    {
+      "id": "LX6",
+      "name": "李婷婷",
+      "rank": "",
+      "stars": 2,
+      "special": false,
+      "note": "二星講師",
+      "seminarQualified": true,
+      "seniority": "2022.10(大約)晉升二星講師\n2020.05擔任一星講師",
+      "regions": []
+    },
+    {
+      "id": "LX7",
+      "name": "曾素華",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "",
+      "regions": []
+    },
+    {
+      "id": "LX8",
+      "name": "林愛妹",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "",
+      "regions": []
+    },
+    {
+      "id": "LX9",
+      "name": "鈕世強",
+      "rank": "",
+      "stars": 2,
+      "special": false,
+      "note": "二星講師",
+      "seminarQualified": true,
+      "seniority": "2024.10晉升二星講師-年資自2024.11計算\n2022.04(大約)擔任一星講師",
+      "regions": [
+        "花蓮",
+        "台東"
+      ]
+    },
+    {
+      "id": "LX10",
+      "name": "許妙如",
+      "rank": "",
+      "stars": 2,
+      "special": false,
+      "note": "二星講師",
+      "seminarQualified": true,
+      "seniority": "2024.10晉升二星講師-年資自2024.11計算\n2020.05擔任一星講師",
+      "regions": [
+        "台南"
+      ]
+    },
+    {
+      "id": "LX11",
+      "name": "邱繼源",
+      "rank": "",
+      "stars": 2,
+      "special": false,
+      "note": "二星講師",
+      "seminarQualified": true,
+      "seniority": "2020.12擔任一星講師\n2025.11晉升二星講師",
+      "regions": []
+    },
+    {
+      "id": "LX12",
+      "name": "文林生",
+      "rank": "",
+      "stars": 0,
+      "special": true,
+      "note": "特任講師",
+      "seminarQualified": true,
+      "seniority": "",
+      "regions": []
+    },
+    {
+      "id": "LX13",
+      "name": "曾素華",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "2024.05通過\n2024.09安排",
+      "regions": []
+    },
+    {
+      "id": "LX14",
+      "name": "胡詩茵",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "2024.05通過\n2024.10安排",
+      "regions": [
+        "台東"
+      ]
+    },
+    {
+      "id": "LX15",
+      "name": "林翠彬",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "2024.05通過\n2024.09安排",
+      "regions": []
+    },
+    {
+      "id": "LX16",
+      "name": "許曦之",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "",
+      "regions": []
+    },
+    {
+      "id": "LX17",
+      "name": "黃衒嘉",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": true,
+      "seniority": "",
+      "regions": []
+    },
+    {
+      "id": "LX18",
+      "name": "王麗春",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "",
+      "regions": []
+    },
+    {
+      "id": "LX19",
+      "name": "洪憲漳",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": true,
+      "seniority": "",
+      "regions": []
+    },
+    {
+      "id": "LX20",
+      "name": "徐秀勤",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": true,
+      "seniority": "",
+      "regions": []
+    },
+    {
+      "id": "LX21",
+      "name": "闕靖綾",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "2023.11安排",
+      "regions": [
+        "台南",
+        "高雄"
+      ]
+    },
+    {
+      "id": "LX22",
+      "name": "劉于令",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "",
+      "regions": []
+    },
+    {
+      "id": "LX23",
+      "name": "郭仲廈",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": true,
+      "seniority": "",
+      "regions": []
+    },
+    {
+      "id": "LX24",
+      "name": "陳韋劭",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "2024.05通過\n2024.10安排",
+      "regions": [
+        "台中"
+      ]
+    },
+    {
+      "id": "LX25",
+      "name": "曾玉如",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "2023.11安排",
+      "regions": []
+    },
+    {
+      "id": "LX26",
+      "name": "王勁伸",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": true,
+      "seniority": "2024.05通過\n2024.09安排",
+      "regions": []
+    },
+    {
+      "id": "LX27",
+      "name": "劉彩蓮",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": true,
+      "seniority": "",
+      "regions": []
+    },
+    {
+      "id": "LX28",
+      "name": "張秀枝",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "",
+      "regions": []
+    },
+    {
+      "id": "LX29",
+      "name": "賴婷柔",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "2023.11安排",
+      "regions": [
+        "高雄"
+      ]
+    },
+    {
+      "id": "LX30",
+      "name": "朱軒誼",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "2024.05通過\n2024.09安排",
+      "regions": []
+    },
+    {
+      "id": "LX31",
+      "name": "翁晶晏",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "2024.05通過\n2024.09安排",
+      "regions": [
+        "台南",
+        "高雄"
+      ]
+    },
+    {
+      "id": "LX32",
+      "name": "孫婉麗",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": true,
+      "seniority": "",
+      "regions": []
+    },
+    {
+      "id": "LX33",
+      "name": "潘奕涵",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "2025.10通過\n2025.11安排",
+      "regions": []
+    },
+    {
+      "id": "LX34",
+      "name": "陳杰豪",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "2025.10通過\n2025.11安排",
+      "regions": []
+    },
+    {
+      "id": "LX35",
+      "name": "孫苓獻",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "2025.10通過\n2025.11安排",
+      "regions": []
+    },
+    {
+      "id": "LX36",
+      "name": "袁永林",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "2025.10通過\n2025.11安排",
+      "regions": []
+    },
+    {
+      "id": "LX37",
+      "name": "陳婉君",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師",
+      "seminarQualified": false,
+      "seniority": "2025.10通過\n2025.11安排",
+      "regions": []
+    }
+  ],
+  "hosts": [
+    {
+      "id": "HX1",
+      "name": "劉敏",
+      "rank": "GP",
+      "stars": 0,
+      "note": "GP總裁",
+      "seminarQualified": false,
+      "regions": [],
+      "seniority": ""
+    },
+    {
+      "id": "HX2",
+      "name": "林翠彬",
+      "rank": "GP",
+      "stars": 0,
+      "note": "GP總裁",
+      "seminarQualified": false,
+      "regions": [],
+      "seniority": "V"
+    },
+    {
+      "id": "HX3",
+      "name": "魏忻雍",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監",
+      "seminarQualified": true,
+      "regions": [
+        "台北"
+      ],
+      "seniority": "V"
+    },
+    {
+      "id": "HX4",
+      "name": "闕靖綾",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監",
+      "seminarQualified": true,
+      "regions": [],
+      "seniority": "V"
+    },
+    {
+      "id": "HX5",
+      "name": "王硯右",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監",
+      "seminarQualified": true,
+      "regions": [
+        "台北"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX6",
+      "name": "陳德全",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台北"
+      ],
+      "seniority": "2023.10安排"
+    },
+    {
+      "id": "HX7",
+      "name": "葉家齊",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台北"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX8",
+      "name": "陳素瑜",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台北",
+        "中壢"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX9",
+      "name": "陳婉君",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁",
+      "seminarQualified": true,
+      "regions": [
+        "台北"
+      ],
+      "seniority": "2025.11安排"
+    },
+    {
+      "id": "HX10",
+      "name": "陳杰豪",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁",
+      "seminarQualified": true,
+      "regions": [
+        "台北"
+      ],
+      "seniority": "2025.11安排"
+    },
+    {
+      "id": "HX11",
+      "name": "潘奕涵",
+      "rank": "GP",
+      "stars": 0,
+      "note": "GP總裁",
+      "seminarQualified": true,
+      "regions": [
+        "台北"
+      ],
+      "seniority": "2025.11安排"
+    },
+    {
+      "id": "HX12",
+      "name": "潘思安",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台北",
+        "中壢"
+      ],
+      "seniority": "2025.11安排"
+    },
+    {
+      "id": "HX13",
+      "name": "許印吟",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台北"
+      ],
+      "seniority": "2025.11安排"
+    },
+    {
+      "id": "HX14",
+      "name": "陳廷軒",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台北",
+        "中壢"
+      ],
+      "seniority": "2025.11安排"
+    },
+    {
+      "id": "HX15",
+      "name": "游明烽",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": true,
+      "regions": [
+        "台北",
+        "中壢"
+      ],
+      "seniority": "2022.03安排"
+    },
+    {
+      "id": "HX16",
+      "name": "秦其豪",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監",
+      "seminarQualified": true,
+      "regions": [
+        "台北",
+        "中壢"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX17",
+      "name": "朱軒誼",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總監",
+      "seminarQualified": true,
+      "regions": [
+        "台北",
+        "中壢"
+      ],
+      "seniority": "2023.10安排"
+    },
+    {
+      "id": "HX18",
+      "name": "馮依如",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁",
+      "seminarQualified": false,
+      "regions": [
+        "中壢"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX19",
+      "name": "池勇廷",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監",
+      "seminarQualified": true,
+      "regions": [
+        "中壢"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX20",
+      "name": "鄧麒麟",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": true,
+      "regions": [],
+      "seniority": ""
+    },
+    {
+      "id": "HX21",
+      "name": "賴婷柔",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": true,
+      "regions": [],
+      "seniority": ""
+    },
+    {
+      "id": "HX22",
+      "name": "邱繼熒",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監",
+      "seminarQualified": false,
+      "regions": [
+        "中壢"
+      ],
+      "seniority": "2023.10安排"
+    },
+    {
+      "id": "HX23",
+      "name": "賴碧芬",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁",
+      "seminarQualified": true,
+      "regions": [
+        "中壢"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX24",
+      "name": "翁素梅",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監",
+      "seminarQualified": false,
+      "regions": [
+        "中壢"
+      ],
+      "seniority": "2024.10安排/2024.07通過"
+    },
+    {
+      "id": "HX25",
+      "name": "黃嫀芳",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": false,
+      "regions": [
+        "中壢"
+      ],
+      "seniority": "2024.10安排/2024.07通過"
+    },
+    {
+      "id": "HX26",
+      "name": "王勁伸",
+      "rank": "SP",
+      "stars": 2,
+      "note": "SP總監",
+      "seminarQualified": true,
+      "regions": [
+        "宜蘭",
+        "台北"
+      ],
+      "seniority": "2024.10晉升二星主持-年資自2024.11計算\n2021.08擔任一星主持"
+    },
+    {
+      "id": "HX27",
+      "name": "曾玉如",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁",
+      "seminarQualified": true,
+      "regions": [
+        "宜蘭",
+        "台北"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX28",
+      "name": "李佩芳",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": true,
+      "regions": [
+        "宜蘭",
+        "台北"
+      ],
+      "seniority": "2022.03安排"
+    },
+    {
+      "id": "HX29",
+      "name": "陳韋劭",
+      "rank": "SP",
+      "stars": 2,
+      "note": "SP總裁",
+      "seminarQualified": true,
+      "regions": [
+        "花蓮",
+        "宜蘭",
+        "台北"
+      ],
+      "seniority": "2024.10晉升二星主持-年資自2024.11計算\n2021.08擔任一星主持"
+    },
+    {
+      "id": "HX30",
+      "name": "林玳寶",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監",
+      "seminarQualified": true,
+      "regions": [
+        "花蓮",
+        "宜蘭",
+        "台北"
+      ],
+      "seniority": "2022.03安排"
+    },
+    {
+      "id": "HX31",
+      "name": "林佩蓉",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": true,
+      "regions": [
+        "花蓮",
+        "宜蘭",
+        "台北"
+      ],
+      "seniority": "2022.03安排"
+    },
+    {
+      "id": "HX32",
+      "name": "林俊賓",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監",
+      "seminarQualified": true,
+      "regions": [
+        "宜蘭",
+        "花蓮"
+      ],
+      "seniority": "2023.10安排"
+    },
+    {
+      "id": "HX33",
+      "name": "卓松熙",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁",
+      "seminarQualified": false,
+      "regions": [
+        "花蓮"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX34",
+      "name": "徐瑩蘋",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監",
+      "seminarQualified": false,
+      "regions": [
+        "花蓮"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX35",
+      "name": "鄧淑芬",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁",
+      "seminarQualified": true,
+      "regions": [
+        "中壢",
+        "台中"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX36",
+      "name": "徐湘芸",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監",
+      "seminarQualified": false,
+      "regions": [
+        "花蓮"
+      ],
+      "seniority": "2025.11安排"
+    },
+    {
+      "id": "HX37",
+      "name": "陳紫妍",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監",
+      "seminarQualified": false,
+      "regions": [
+        "花蓮"
+      ],
+      "seniority": "2025.11安排"
+    },
+    {
+      "id": "HX38",
+      "name": "劉顏華",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監",
+      "seminarQualified": false,
+      "regions": [
+        "花蓮"
+      ],
+      "seniority": "2025.11安排"
+    },
+    {
+      "id": "HX39",
+      "name": "謝佩珊",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台東"
+      ],
+      "seniority": "2025.11通過"
+    },
+    {
+      "id": "HX40",
+      "name": "林淑靜",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台東"
+      ],
+      "seniority": "2025.11安排"
+    },
+    {
+      "id": "HX41",
+      "name": "林秋惠",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台東"
+      ],
+      "seniority": "2025.11通過"
+    },
+    {
+      "id": "HX42",
+      "name": "康梓妡",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁",
+      "seminarQualified": false,
+      "regions": [
+        "台東"
+      ],
+      "seniority": "2025.11安排"
+    },
+    {
+      "id": "HX43",
+      "name": "葉冬福",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台東"
+      ],
+      "seniority": "2025.11安排"
+    },
+    {
+      "id": "HX44",
+      "name": "沈月真",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監",
+      "seminarQualified": true,
+      "regions": [
+        "台東"
+      ],
+      "seniority": "2024.10安排/2024.07通過"
+    },
+    {
+      "id": "HX45",
+      "name": "梁瑩瑩",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台東"
+      ],
+      "seniority": "2024.10安排/2024.07通過"
+    },
+    {
+      "id": "HX46",
+      "name": "彭韵潤",
+      "rank": "GP",
+      "stars": 0,
+      "note": "GP總裁",
+      "seminarQualified": true,
+      "regions": [
+        "台東"
+      ],
+      "seniority": "2024.10安排/2024.07通過"
+    },
+    {
+      "id": "HX47",
+      "name": "謝秀卿",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台東"
+      ],
+      "seniority": "2024.10安排/2024.07通過"
+    },
+    {
+      "id": "HX48",
+      "name": "楊恆睿",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監",
+      "seminarQualified": true,
+      "regions": [
+        "台中"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX49",
+      "name": "翁晶晏",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁",
+      "seminarQualified": true,
+      "regions": [
+        "中壢",
+        "台中"
+      ],
+      "seniority": "2023.10安排"
+    },
+    {
+      "id": "HX50",
+      "name": "張煒敏",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁",
+      "seminarQualified": true,
+      "regions": [
+        "台中",
+        "高雄"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX51",
+      "name": "陳誼瑄",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監",
+      "seminarQualified": true,
+      "regions": [
+        "台中"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX52",
+      "name": "陳怡萍",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台中"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX53",
+      "name": "劉翠梅",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台中"
+      ],
+      "seniority": "2023.10安排"
+    },
+    {
+      "id": "HX54",
+      "name": "許惟棠",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": true,
+      "regions": [
+        "台中"
+      ],
+      "seniority": "2023.10安排"
+    },
+    {
+      "id": "HX55",
+      "name": "趙奕程",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台中"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX56",
+      "name": "簡鏡儒",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台中"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX57",
+      "name": "蔡汯展",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": true,
+      "regions": [
+        "台中"
+      ],
+      "seniority": "2023.10安排"
+    },
+    {
+      "id": "HX58",
+      "name": "黃小京",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台中"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX59",
+      "name": "李子芹",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁",
+      "seminarQualified": false,
+      "regions": [
+        "台南",
+        "高雄"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX60",
+      "name": "洪惠絹",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台南",
+        "高雄"
+      ],
+      "seniority": ""
+    },
+    {
+      "id": "HX61",
+      "name": "李涵琪",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台南",
+        "高雄",
+        "嘉義"
+      ],
+      "seniority": "2023.10安排"
+    },
+    {
+      "id": "HX62",
+      "name": "郭宥伶",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁",
+      "seminarQualified": false,
+      "regions": [
+        "台南",
+        "高雄",
+        "嘉義"
+      ],
+      "seniority": "2025.11安排"
+    },
+    {
+      "id": "HX63",
+      "name": "陳美蓉",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台南",
+        "高雄",
+        "嘉義"
+      ],
+      "seniority": "2025.11安排"
+    },
+    {
+      "id": "HX64",
+      "name": "蕭肇文",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台南",
+        "高雄",
+        "嘉義"
+      ],
+      "seniority": "2025.11安排"
+    },
+    {
+      "id": "HX65",
+      "name": "劉兆財",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁",
+      "seminarQualified": false,
+      "regions": [
+        "台南",
+        "嘉義"
+      ],
+      "seniority": "2025.11安排"
+    },
+    {
+      "id": "HX66",
+      "name": "黃鏵",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監",
+      "seminarQualified": false,
+      "regions": [
+        "台南",
+        "嘉義"
+      ],
+      "seniority": "2025.11安排"
+    }
+  ],
+  "courseCatalog": [
+    {
+      "category": "Q&A",
+      "name": "產品Q&A",
+      "detail": "產品Q&A-九大(簡)+好轉(多)\n九大反應",
+      "frequency": "每月兩次/內容輪流",
+      "speakerTraits": "",
+      "recommendedLecturers": [
+        "文林生",
+        "李婷婷",
+        "徐秀勤",
+        "陳建和(全)"
+      ],
+      "allowedLecturers": [
+        "曾素華",
+        "許曦之",
+        "許妙如",
+        "林愛妹",
+        "王麗春",
+        "張秀枝(台中)"
+      ]
+    },
+    {
+      "category": "",
+      "name": "制度Q&A",
+      "detail": "",
+      "frequency": "",
+      "speakerTraits": "",
+      "recommendedLecturers": [
+        "邱繼源",
+        "李婷婷",
+        "黃衒嘉"
+      ],
+      "allowedLecturers": []
+    },
+    {
+      "category": "",
+      "name": "市場Q&A(組織)",
+      "detail": "40題不重複即可",
+      "frequency": "",
+      "speakerTraits": "",
+      "recommendedLecturers": [
+        "曾素華",
+        "鈕世強",
+        "許曦之",
+        "許妙如",
+        "賴學弘"
+      ],
+      "allowedLecturers": [
+        "黃衒嘉",
+        "邱繼源"
+      ]
+    },
+    {
+      "category": "NP魅力全營養",
+      "name": "N1-N3",
+      "detail": "",
+      "frequency": "每月一次/內容接續",
+      "speakerTraits": "專業",
+      "recommendedLecturers": [
+        "文林生",
+        "李婷婷",
+        "徐秀勤",
+        "陳建和(全)"
+      ],
+      "allowedLecturers": []
+    },
+    {
+      "category": "",
+      "name": "N4.N5.超氧、超抗",
+      "detail": "",
+      "frequency": "",
+      "speakerTraits": "",
+      "recommendedLecturers": [],
+      "allowedLecturers": []
+    },
+    {
+      "category": "九大慢性病",
+      "name": "九大慢性病",
+      "detail": "",
+      "frequency": "",
+      "speakerTraits": "",
+      "recommendedLecturers": [],
+      "allowedLecturers": []
+    },
+    {
+      "category": "創業說明會\n圓夢計畫\n成功三部曲",
+      "name": "配合公司推動活動",
+      "detail": "",
+      "frequency": "每月一次",
+      "speakerTraits": "炒熱氣氛(氣勢、大聲)",
+      "recommendedLecturers": [
+        "陳建和(全)",
+        "鈕世強",
+        "洪憲漳",
+        "賴學弘"
+      ],
+      "allowedLecturers": [
+        "李婷婷",
+        "曾素華",
+        "許曦之",
+        "邱繼源",
+        "王麗春"
+      ]
+    },
+    {
+      "category": "",
+      "name": "富貴循環",
+      "detail": "",
+      "frequency": "",
+      "speakerTraits": "翻轉人生、故事鮮明",
+      "recommendedLecturers": [
+        "圓夢計畫-許妙如",
+        "黃衒嘉"
+      ],
+      "allowedLecturers": []
+    },
+    {
+      "category": "會場運作",
+      "name": "",
+      "detail": "",
+      "frequency": "",
+      "speakerTraits": "",
+      "recommendedLecturers": [],
+      "allowedLecturers": []
+    },
+    {
+      "category": "制度",
+      "name": "超優勢制度\n(制度優勢及特色)",
+      "detail": "",
+      "frequency": "",
+      "speakerTraits": "邏輯佳、有條理",
+      "recommendedLecturers": [
+        "邱繼源",
+        "李婷婷",
+        "黃衒嘉",
+        "賴學弘"
+      ],
+      "allowedLecturers": [
+        "王麗春",
+        "許妙如",
+        "劉彩蓮(台中)",
+        "張秀枝(台中)"
+      ]
+    },
+    {
+      "category": "",
+      "name": "制度解析",
+      "detail": "",
+      "frequency": "",
+      "speakerTraits": "",
+      "recommendedLecturers": [],
+      "allowedLecturers": []
+    },
+    {
+      "category": "市場與商機",
+      "name": "九大慢性病",
+      "detail": "",
+      "frequency": "",
+      "speakerTraits": "市場經驗豐富",
+      "recommendedLecturers": [
+        "曾素華",
+        "鈕世強",
+        "許曦之",
+        "許妙如",
+        "邱繼源"
+      ],
+      "allowedLecturers": []
+    },
+    {
+      "category": "S.T.O系統",
+      "name": "S分享\nT目標(目標設定與執行)\nO運作(會場運作)",
+      "detail": "",
+      "frequency": "",
+      "speakerTraits": "",
+      "recommendedLecturers": [
+        "許妙如",
+        "曾素華",
+        "李婷婷",
+        "賴學弘"
+      ],
+      "allowedLecturers": [
+        "洪憲漳"
+      ]
+    },
+    {
+      "category": "服務與跟進",
+      "name": "",
+      "detail": "",
+      "frequency": "",
+      "speakerTraits": "",
+      "recommendedLecturers": [],
+      "allowedLecturers": []
+    },
+    {
+      "category": "目標設定與執行",
+      "name": "",
+      "detail": "",
+      "frequency": "",
+      "speakerTraits": "",
+      "recommendedLecturers": [],
+      "allowedLecturers": []
+    }
+  ],
+  "courseNameUpdates": [
+    {
+      "old": "課程名稱",
+      "status": "",
+      "new": ""
+    },
+    {
+      "old": "制度解析",
+      "status": "",
+      "new": ""
+    },
+    {
+      "old": "成功三部曲",
+      "status": "更新",
+      "new": "新人起步三步驟"
+    },
+    {
+      "old": "組織Q&A",
+      "status": "更新",
+      "new": "團隊經營實戰"
+    },
+    {
+      "old": "會場運作",
+      "status": "",
+      "new": ""
+    },
+    {
+      "old": "ABC法則",
+      "status": "",
+      "new": ""
+    },
+    {
+      "old": "圓夢計畫",
+      "status": "",
+      "new": ""
+    },
+    {
+      "old": "市場與商機 ",
+      "status": "更新",
+      "new": "健康市場新趨勢"
+    },
+    {
+      "old": "創業講堂",
+      "status": "更新",
+      "new": ""
+    },
+    {
+      "old": "健康管理課程(後續可安排至系統培訓課程?)",
+      "status": "",
+      "new": ""
+    },
+    {
+      "old": "體態健康管理",
+      "status": "",
+      "new": ""
+    },
+    {
+      "old": "睡眠恢復術",
+      "status": "",
+      "new": ""
+    },
+    {
+      "old": "三高救星",
+      "status": "",
+      "new": ""
+    },
+    {
+      "old": "你的健康從腸胃開始",
+      "status": "",
+      "new": ""
+    },
+    {
+      "old": "免疫力的關鍵密碼",
+      "status": "",
+      "new": ""
+    }
+  ],
+  "schedulingRules": [
+    {
+      "id": "course-product-qa",
+      "type": "courseFrequency",
+      "match": [
+        "產品Q&A"
+      ],
+      "maxPerMonth": 2,
+      "message": "產品Q&A：資料表標示每月兩次，內容輪流。"
+    },
+    {
+      "id": "course-np",
+      "type": "courseFrequency",
+      "match": [
+        "NP魅力全營養",
+        "N1-N3"
+      ],
+      "maxPerMonth": 1,
+      "message": "NP魅力全營養：資料表標示每月一次，內容接續。"
+    },
+    {
+      "id": "course-entrepreneur",
+      "type": "courseFrequency",
+      "match": [
+        "圓夢計畫",
+        "成功三部曲",
+        "新人起步三步驟",
+        "創業說明會"
+      ],
+      "maxPerMonth": 1,
+      "message": "創業/圓夢類課程：資料表標示每月一次。"
+    },
+    {
+      "id": "seminar-qualification",
+      "type": "qualification",
+      "message": "說明會安排時，優先檢查講師/主持人「說明會資格」欄位。"
+    },
+    {
+      "id": "support-region",
+      "type": "region",
+      "message": "人員名單有支援區域時，跨區安排會提示人工確認。"
+    },
+    {
+      "id": "course-recommendation",
+      "type": "recommendation",
+      "message": "依課程資料表的推薦講師/可安排講師提供提示。"
+    }
+  ]
+}
