@@ -1,0 +1,827 @@
+{
+  "lecturers": [
+    {
+      "id": "L1",
+      "name": "黃致堯",
+      "rank": "",
+      "stars": 0,
+      "special": true,
+      "note": "總經理"
+    },
+    {
+      "id": "L2",
+      "name": "陳沛瑩",
+      "rank": "",
+      "stars": 3,
+      "special": false,
+      "note": "三星講師"
+    },
+    {
+      "id": "L3",
+      "name": "陳乃慧",
+      "rank": "",
+      "stars": 3,
+      "special": false,
+      "note": "三星講師"
+    },
+    {
+      "id": "L4",
+      "name": "陳建和",
+      "rank": "",
+      "stars": 3,
+      "special": false,
+      "note": "三星講師"
+    },
+    {
+      "id": "L5",
+      "name": "賴學弘",
+      "rank": "",
+      "stars": 2,
+      "special": false,
+      "note": "二星講師"
+    },
+    {
+      "id": "L6",
+      "name": "李婷婷",
+      "rank": "",
+      "stars": 2,
+      "special": false,
+      "note": "二星講師"
+    },
+    {
+      "id": "L7",
+      "name": "曾素華",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L8",
+      "name": "林愛妹",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L9",
+      "name": "鈕世強",
+      "rank": "",
+      "stars": 2,
+      "special": false,
+      "note": "二星講師"
+    },
+    {
+      "id": "L10",
+      "name": "許妙如",
+      "rank": "",
+      "stars": 2,
+      "special": false,
+      "note": "二星講師"
+    },
+    {
+      "id": "L11",
+      "name": "邱繼源",
+      "rank": "",
+      "stars": 2,
+      "special": false,
+      "note": "二星講師"
+    },
+    {
+      "id": "L12",
+      "name": "文林生",
+      "rank": "",
+      "stars": 0,
+      "special": true,
+      "note": "特任講師"
+    },
+    {
+      "id": "L13",
+      "name": "胡詩茵",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L14",
+      "name": "林翠彬",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L15",
+      "name": "許曦之",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L16",
+      "name": "黃衒嘉",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L17",
+      "name": "王麗春",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L18",
+      "name": "洪憲漳",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L19",
+      "name": "徐秀勤",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L20",
+      "name": "闕靖綾",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L21",
+      "name": "劉于令",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L22",
+      "name": "郭仲廈",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L23",
+      "name": "陳韋劭",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L24",
+      "name": "曾玉如",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L25",
+      "name": "王勁伸",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L26",
+      "name": "劉彩蓮",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L27",
+      "name": "張秀枝",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L28",
+      "name": "賴婷柔",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L29",
+      "name": "朱軒誼",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L30",
+      "name": "翁晶晏",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L31",
+      "name": "孫婉麗",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L32",
+      "name": "潘奕涵",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L33",
+      "name": "陳杰豪",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L34",
+      "name": "孫苓獻",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L35",
+      "name": "袁永林",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    },
+    {
+      "id": "L36",
+      "name": "陳婉君",
+      "rank": "",
+      "stars": 1,
+      "special": false,
+      "note": "一星講師"
+    }
+  ],
+  "hosts": [
+    {
+      "id": "H1",
+      "name": "劉敏",
+      "rank": "GP",
+      "stars": 0,
+      "note": "GP總裁"
+    },
+    {
+      "id": "H2",
+      "name": "林翠彬",
+      "rank": "GP",
+      "stars": 0,
+      "note": "GP總裁"
+    },
+    {
+      "id": "H3",
+      "name": "魏忻雍",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監"
+    },
+    {
+      "id": "H4",
+      "name": "闕靖綾",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監"
+    },
+    {
+      "id": "H5",
+      "name": "王硯右",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監"
+    },
+    {
+      "id": "H6",
+      "name": "陳德全",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H7",
+      "name": "葉家齊",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監"
+    },
+    {
+      "id": "H8",
+      "name": "陳素瑜",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H9",
+      "name": "陳婉君",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁"
+    },
+    {
+      "id": "H10",
+      "name": "陳杰豪",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁"
+    },
+    {
+      "id": "H11",
+      "name": "潘奕涵",
+      "rank": "GP",
+      "stars": 0,
+      "note": "GP總裁"
+    },
+    {
+      "id": "H12",
+      "name": "潘思安",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H13",
+      "name": "許印吟",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監"
+    },
+    {
+      "id": "H14",
+      "name": "陳廷軒",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監"
+    },
+    {
+      "id": "H15",
+      "name": "游明烽",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H16",
+      "name": "秦其豪",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監"
+    },
+    {
+      "id": "H17",
+      "name": "朱軒誼",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總監"
+    },
+    {
+      "id": "H18",
+      "name": "馮依如",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁"
+    },
+    {
+      "id": "H19",
+      "name": "池勇廷",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監"
+    },
+    {
+      "id": "H20",
+      "name": "鄧麒麟",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H21",
+      "name": "賴婷柔",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H22",
+      "name": "邱繼熒",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監"
+    },
+    {
+      "id": "H23",
+      "name": "賴碧芬",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁"
+    },
+    {
+      "id": "H24",
+      "name": "翁素梅",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監"
+    },
+    {
+      "id": "H25",
+      "name": "黃嫀芳",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H26",
+      "name": "王勁伸",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總監"
+    },
+    {
+      "id": "H27",
+      "name": "曾玉如",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁"
+    },
+    {
+      "id": "H28",
+      "name": "李佩芳",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H29",
+      "name": "陳韋劭",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁"
+    },
+    {
+      "id": "H30",
+      "name": "林玳寶",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監"
+    },
+    {
+      "id": "H31",
+      "name": "林佩蓉",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H32",
+      "name": "林俊賓",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監"
+    },
+    {
+      "id": "H33",
+      "name": "卓松熙",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁"
+    },
+    {
+      "id": "H34",
+      "name": "徐瑩蘋",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監"
+    },
+    {
+      "id": "H35",
+      "name": "鄧淑芬",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁"
+    },
+    {
+      "id": "H36",
+      "name": "徐湘芸",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監"
+    },
+    {
+      "id": "H37",
+      "name": "陳紫妍",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監"
+    },
+    {
+      "id": "H38",
+      "name": "劉顏華",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監"
+    },
+    {
+      "id": "H39",
+      "name": "謝佩珊",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H40",
+      "name": "林淑靜",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監"
+    },
+    {
+      "id": "H41",
+      "name": "林秋惠",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H42",
+      "name": "康梓妡",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁"
+    },
+    {
+      "id": "H43",
+      "name": "葉冬福",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H44",
+      "name": "沈月真",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監"
+    },
+    {
+      "id": "H45",
+      "name": "梁瑩瑩",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H46",
+      "name": "彭韵潤",
+      "rank": "GP",
+      "stars": 0,
+      "note": "GP總裁"
+    },
+    {
+      "id": "H47",
+      "name": "謝秀卿",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監"
+    },
+    {
+      "id": "H48",
+      "name": "楊恆睿",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監"
+    },
+    {
+      "id": "H49",
+      "name": "翁晶晏",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁"
+    },
+    {
+      "id": "H50",
+      "name": "張煒敏",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁"
+    },
+    {
+      "id": "H51",
+      "name": "陳誼瑄",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監"
+    },
+    {
+      "id": "H52",
+      "name": "陳怡萍",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H53",
+      "name": "劉翠梅",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H54",
+      "name": "許惟棠",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H55",
+      "name": "趙奕程",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監"
+    },
+    {
+      "id": "H56",
+      "name": "簡鏡儒",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監"
+    },
+    {
+      "id": "H57",
+      "name": "蔡汯展",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H58",
+      "name": "黃小京",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監"
+    },
+    {
+      "id": "H59",
+      "name": "李子芹",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁"
+    },
+    {
+      "id": "H60",
+      "name": "洪惠絹",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H61",
+      "name": "李涵琪",
+      "rank": "SD",
+      "stars": 0,
+      "note": "SD總監"
+    },
+    {
+      "id": "H62",
+      "name": "郭宥伶",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁"
+    },
+    {
+      "id": "H63",
+      "name": "陳美蓉",
+      "rank": "PD",
+      "stars": 0,
+      "note": "PD總監"
+    },
+    {
+      "id": "H64",
+      "name": "蕭肇文",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    },
+    {
+      "id": "H65",
+      "name": "劉兆財",
+      "rank": "SP",
+      "stars": 0,
+      "note": "SP總裁"
+    },
+    {
+      "id": "H66",
+      "name": "黃鏵",
+      "rank": "GD",
+      "stars": 0,
+      "note": "GD總監"
+    }
+  ],
+  "audio": [
+    {
+      "id": "A1",
+      "name": "蔡汯展",
+      "note": "音控/DJ參考名單"
+    },
+    {
+      "id": "A2",
+      "name": "林佩蓉",
+      "note": "音控/DJ參考名單"
+    },
+    {
+      "id": "A3",
+      "name": "陳廷軒",
+      "note": "音控/DJ參考名單"
+    }
+  ],
+  "contacts": [
+    {
+      "name": "台北總公司",
+      "address": "台北市大安區忠孝東路四段270號3樓之5",
+      "tel": "02-2778-0413",
+      "fax": "02-2721-5575"
+    },
+    {
+      "name": "宜蘭分公司",
+      "address": "宜蘭市民族路338號2樓（基礎大樓）",
+      "tel": "03-933-1591",
+      "fax": "03-933-0913"
+    },
+    {
+      "name": "台中分公司",
+      "address": "台中市西區忠明南路270號11樓之2",
+      "tel": "04-2377-0568",
+      "fax": "04-2377-0319"
+    },
+    {
+      "name": "中壢分公司",
+      "address": "桃園市中壢區中央西路一段120號19樓之9",
+      "tel": "03-425-0270",
+      "fax": "03-425-0340"
+    },
+    {
+      "name": "高雄分公司",
+      "address": "高雄市前鎮區中山二路2號12樓之2",
+      "tel": "07-536-8682",
+      "fax": "07-536-7277"
+    },
+    {
+      "name": "台南分公司",
+      "address": "台南市北區西門路三段159號6樓之3",
+      "tel": "06-223-1391",
+      "fax": "06-223-1539"
+    },
+    {
+      "name": "花蓮分公司",
+      "address": "花蓮市國聯四路65號8樓之1",
+      "tel": "03-831-5191",
+      "fax": "03-831-1039"
+    },
+    {
+      "name": "台東分公司",
+      "address": "台東市鄭州街3號2樓",
+      "tel": "089-335-856",
+      "fax": "089-333-592"
+    }
+  ],
+  "meta": {
+    "businessHours": "週一至週五 AM 10:30 – PM 19:30",
+    "hotline": "0800-050-867　07-536-8076"
+  }
+}

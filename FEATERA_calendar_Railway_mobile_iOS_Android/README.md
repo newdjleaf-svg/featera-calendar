@@ -1,41 +1,36 @@
-# FEATERA Calendar App
+# FEATERA 專用行事曆排程 Web App
 
-## 功能
-- 固定 16:9 橫式行事曆輸出
-- 日期版面固定 7 欄 × 5 列（35 格）
-- 地區切換：台灣 / 中國廈門
-- 2026 年官方國定假日自動切換
-- 中國廈門 2026 調休上班日也會標示
-- 自訂年月大標題
-- 新增 / 修改 / 刪除行程
-- 行程標題與內容可個別設定字體大小
-- 匯出 PNG 時功能列不會進入出圖範圍
+## 主要功能
+- 月曆版面參考公司既有樣式，跨月日期留白。
+- 管理員 / 訪客模式；訪客唯讀，可匯出 PNG / 分享。
+- 每筆行程可新增多行文字，每一行獨立設定：字體大小、顏色、對齊、粗體、斜體、底線。
+- 大標題、副標題、公司營業時間、客服電話、各分公司地址/電話/FAX皆可修改。
+- Logo 可自行上傳並儲存。
+- 講師、主持人、音控名單可新增修改；講師星級 1～3 星；經銷商聘級依 SM→GM→PM→SD→GD→PD→SP→GP→PP→DP→DDP。
+- 每日行程可記錄區域、課程類型、講師、主持人、音控、人數、備註。
+- 「三個月排程檢查」會依附件規則提示異常。
+- 匯出 PNG 為 A4 橫式比例，匯出時隱藏功能按鈕；支援 Web Share API 的裝置可直接分享。
+- 預設 LocalStorage；可設定 Supabase URL + anon key 做雲端同步。
 
-## 重要：7×5 固定版面
-固定 35 格會從「包含當月 1 日的星期一」開始連續顯示 35 天。
-少數自然月曆需要第 6 週的月份，月底最後幾天可能不在該月的 7×5 畫面內；可切換到下一個月查看。
+## 預設登入
+- 帳號：`Featera`
+- 密碼：`featera168`
 
-## 2026 假日資料來源
-- 台灣：行政院人事行政總處 115 年（2026）政府行政機關辦公日曆表。
-- 中國廈門：國務院辦公廳 2026 年部分節假日安排通知。
+## 本機開啟
+不要直接雙擊 index.html（部分瀏覽器會限制 fetch seed.json）。建議在資料夾內執行：
 
-2027 年之後的實際假日安排需待官方公布後，再加入 `public/app.js` 的 `HOLIDAY_DATA`。
+```bash
+python3 -m http.server 8080
+```
+然後開啟 `http://localhost:8080`。
 
-## Railway 部署
-1. 將整個專案上傳到 GitHub Repository。
-2. Railway 建立 New Project。
-3. 選擇 Deploy from GitHub Repo。
-4. 選擇此 Repository。
-5. Railway 會自動執行 `npm install` 與 `npm start`。
-6. 在 Railway Settings / Networking 建立 Public Domain。
+## GitHub Pages
+把此資料夾所有檔案放到 repository 根目錄，Pages 的 Source 選 Deploy from a branch 即可。
 
-## 資料儲存
-目前使用瀏覽器 localStorage，因此同一瀏覽器會保留資料，但不同裝置不會同步。
+## Supabase 雲端同步
+1. 建立 Supabase project。
+2. 在 SQL Editor 執行 `supabase-schema.sql`。
+3. App 以管理員登入 → 系統設定 → 填入 Project URL 與 anon key → 儲存。
+4. 點右上「雲端」即可上傳/下載同步。
 
-## iOS / Android 手機版
-- 會自動偵測 iPhone / iPad / Android，套用不同的手機操作列與 Safe Area 版面。
-- 行事曆 PNG 區域仍維持橫式 16:9；手機上可左右滑動查看，不會壓扁輸出圖片。
-- `分享` 會產生 PNG 預覽，再透過 Web Share API 呼叫手機原生分享面板，可選擇裝置上已安裝且支援分享的通訊 App。
-- iOS 瀏覽器基於系統安全權限，純網頁無法保證「一鍵直接寫入照片圖庫」。本 APP 提供圖片預覽、長按儲存與 iOS 系統分享面板；可在系統提供選項時選「儲存影像」。
-- Android 的 `儲存圖片` 會下載 PNG 到裝置；Android 相簿/Google Photos 是否立即索引下載檔案由裝置與瀏覽器決定。
-- Web Share API 需要 HTTPS；Railway 公開網域預設提供 HTTPS。
+注意：目前採簡化 RLS，適合公司內部使用；若公開網路使用，建議改成 Supabase Auth + 角色權限。

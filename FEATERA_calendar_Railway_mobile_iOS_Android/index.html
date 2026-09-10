@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#24481f" />
+  <title>FEATERA 行事曆排程系統</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <section id="loginView" class="login-view">
+    <div class="login-card">
+      <div class="brand-mark">FEAT<span>ERA</span></div>
+      <h1>FEATERA 行事曆排程系統</h1>
+      <p>管理員可編輯、同步與匯出；訪客可瀏覽、匯出與分享。</p>
+      <form id="adminLoginForm" class="login-form">
+        <label>管理員帳號<input id="loginUser" value="Featera" autocomplete="username"></label>
+        <label>管理員密碼<input id="loginPass" type="password" value="featera168" autocomplete="current-password"></label>
+        <button class="primary" type="submit">管理員登入</button>
+      </form>
+      <button id="guestLoginBtn" class="secondary full">訪客登入</button>
+      <div id="loginError" class="error-text"></div>
+      <div class="login-note">預設管理員：Featera / featera168（可在「系統設定」修改）</div>
+    </div>
+  </section>
+
+  <div id="app" class="app hidden">
+    <header class="topbar no-export">
+      <div class="topbar-left">
+        <button id="menuBtn" class="icon-btn" aria-label="選單">☰</button>
+        <strong>FEATERA 排程</strong>
+        <span id="modeBadge" class="mode-badge">管理員</span>
+      </div>
+      <div class="topbar-actions">
+        <button id="cloudBtn" class="secondary">☁ 雲端</button>
+        <button id="exportBtn" class="primary">匯出 PNG</button>
+        <button id="shareBtn" class="secondary">分享</button>
+        <button id="logoutBtn" class="ghost">登出</button>
+      </div>
+    </header>
+
+    <aside id="sidebar" class="sidebar no-export">
+      <div class="side-section">
+        <div class="side-title">月份</div>
+        <div class="month-nav">
+          <button id="prevBtn">‹</button>
+          <input id="monthPicker" type="month" />
+          <button id="nextBtn">›</button>
+        </div>
+        <button id="todayBtn" class="secondary full">回到本月</button>
+      </div>
+      <div class="side-section admin-only">
+        <div class="side-title">排程管理</div>
+        <button id="addEventBtn" class="primary full">＋ 新增行程</button>
+        <button id="validateBtn" class="secondary full">⚠ 三個月排程檢查</button>
+      </div>
+      <div class="side-section admin-only">
+        <div class="side-title">資料維護</div>
+        <button id="staffBtn" class="secondary full">講師 / 主持 / 音控</button>
+        <button id="layoutBtn" class="secondary full">標題 / Logo / 聯絡資訊</button>
+        <button id="settingsBtn" class="secondary full">系統設定</button>
+      </div>
+      <div class="side-section">
+        <div class="side-title">快速檢視</div>
+        <button id="statsBtn" class="secondary full">本月人數統計</button>
+        <button id="historyBtn" class="secondary full">歷史資料參考</button>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <section id="sheet" class="calendar-sheet">
+        <div class="sheet-head">
+          <div id="logoBox" class="logo-box" title="管理員可於版面設定上傳 Logo">
+            <img id="logoImg" class="hidden" alt="FEATERA Logo" />
+            <div id="logoFallback" class="brand-mark large">FEAT<span>ERA</span></div>
+          </div>
+          <div class="title-wrap">
+            <div id="calendarTitle" class="calendar-title">2026年9月行事曆</div>
+            <div id="subtitleText" class="calendar-subtitle"></div>
+          </div>
+          <div class="corp-meta">
+            <div>公司營業時間：<strong id="businessHours"></strong></div>
+            <div>免付費客服專線：<strong id="hotline"></strong></div>
+          </div>
+        </div>
+        <div class="weekday-row" id="weekdayRow"></div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="contacts-grid" id="contactsGrid"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card wide">
+      <div class="modal-head"><h2 id="modalTitle">新增行程</h2><button id="modalClose" class="icon-btn">✕</button></div>
+      <div id="modalBody" class="modal-body"></div>
+      <div id="modalFoot" class="modal-foot"></div>
+    </div>
+  </div>
+
+  <input id="logoUpload" type="file" accept="image/*" class="hidden" />
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+</body>
+</html>
