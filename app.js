@@ -89,7 +89,7 @@ function bind(){
   $('menuBtn').onclick=toggleSidebar; $('drawerBackdrop').onclick=toggleSidebar;
   $('prevBtn').onclick=()=>changeMonth(-1);$('nextBtn').onclick=()=>changeMonth(1);$('todayBtn').onclick=()=>{const d=new Date();state.month=new Date(d.getFullYear(),d.getMonth(),1);renderAll()};
   $('monthPicker').onchange=e=>{if(e.target.value){const [y,m]=e.target.value.split('-').map(Number);state.month=new Date(y,m-1,1);renderAll()}};
-  $('addEventBtn').onclick=()=>openEventEditor(null,ymd(state.month)); $('validateBtn').onclick=showValidation;
+  $('addEventBtn').onclick=()=>openEventEditor(null,ymd(state.month)); $('plannerBtn').onclick=showSmartPlanner; $('validateBtn').onclick=showValidation;
   $('staffBtn').onclick=showStaff; $('layoutBtn').onclick=showLayout; $('appearanceBtn').onclick=showAppearance; $('settingsBtn').onclick=showSettings; $('statsBtn').onclick=showStats; $('historyBtn').onclick=showHistory;
   $('exportBtn').onclick=exportPNG; $('shareBtn').onclick=sharePNG; $('cloudBtn').onclick=showCloud;
   $('modalClose').onclick=closeModal; $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
@@ -200,10 +200,10 @@ function openEventEditor(id,date){
     <label class="field"><span>音控</span><select id="evAudio">${personOptions(state.staff.audio,obj.audioId)}</select></label>
     <label class="field"><span>第一行樣式</span><select id="evHighlight"><option value="1" ${obj.highlight?'selected':''}>標準</option><option value="0" ${!obj.highlight?'selected':''}>標準</option></select></label>
     <label class="field span2"><span>附註事項</span><textarea id="evNote">${esc(obj.note||'')}</textarea></label>
-    <div class="span2"><div class="toolbar-row"><b>顯示文字（每行可獨立格式）</b><button id="addLineBtn" type="button" class="secondary">＋新增一行</button><button id="autoFillBtn" type="button" class="secondary">依人員自動帶入</button></div><div id="lineEditors">${lineEditorHtml(obj.lines||[])}</div></div>
+    <div class="span2"><div class="toolbar-row"><b>顯示文字（每行可獨立格式）</b><button id="addLineBtn" type="button" class="secondary">＋新增一行</button><button id="autoFillBtn" type="button" class="secondary">依人員自動帶入</button><button id="smartSuggestBtn" type="button" class="primary">✨ 智慧推薦人員</button></div><div id="smartSuggestBox" class="smart-suggest-box"></div><div id="lineEditors">${lineEditorHtml(obj.lines||[])}</div></div>
   </div>`,`${e?'<button id="deleteEventBtn" class="danger primary">刪除</button>':''}<button id="cancelModalBtn" class="secondary">取消</button><button id="saveEventBtn" class="primary">儲存</button>`);
   wireLineEditors();$('addLineBtn').onclick=()=>{$('lineEditors').insertAdjacentHTML('beforeend',lineRow({text:'',size:14,color:'#111111',align:'left'},document.querySelectorAll('.line-editor').length));wireLineEditors()};
-  $('autoFillBtn').onclick=()=>autofillEventLines();$('cancelModalBtn').onclick=closeModal;$('saveEventBtn').onclick=()=>saveEvent(obj.id);if(e)$('deleteEventBtn').onclick=()=>{if(confirm('確定刪除此行程？')){state.events=state.events.filter(x=>x.id!==e.id);saveLocal();closeModal();renderAll()}};
+  $('autoFillBtn').onclick=()=>autofillEventLines();$('smartSuggestBtn').onclick=()=>smartSuggestForEditor();$('cancelModalBtn').onclick=closeModal;$('saveEventBtn').onclick=()=>saveEvent(obj.id);if(e)$('deleteEventBtn').onclick=()=>{if(confirm('確定刪除此行程？')){state.events=state.events.filter(x=>x.id!==e.id);saveLocal();closeModal();renderAll()}};
 }
 function wireLineEditors(){document.querySelectorAll('.line-editor').forEach(row=>{row.querySelectorAll('.toggle').forEach(btn=>btn.onclick=()=>btn.classList.toggle('active'));row.querySelector('.remove-line').onclick=()=>row.remove()})}
 function collectLines(){return [...document.querySelectorAll('.line-editor')].map(row=>({text:row.querySelector('.line-text').value,size:+row.querySelector('.line-size').value||14,color:row.querySelector('.line-color').value,align:row.querySelector('.line-align').value,bold:row.querySelector('.line-bold').classList.contains('active'),italic:row.querySelector('.line-italic').classList.contains('active'),underline:row.querySelector('.line-underline').classList.contains('active')})).filter(x=>x.text.trim())}
@@ -264,5 +264,138 @@ function showHistory(){const ref=state.reference||{};const courseRows=(ref.cours
 async function makeCanvas(){document.body.classList.add('exporting');await new Promise(r=>setTimeout(r,80));const sheet=$('sheet');const canvas=await html2canvas(sheet,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,width:sheet.scrollWidth,height:sheet.scrollHeight});document.body.classList.remove('exporting');return canvas}
 async function exportPNG(){try{const canvas=await makeCanvas();const a=document.createElement('a');a.download=`FEATERA_${$('calendarTitle').textContent}.png`;a.href=canvas.toDataURL('image/png');a.click()}catch(e){document.body.classList.remove('exporting');alert('匯出失敗：'+e.message)}}
 async function sharePNG(){try{const canvas=await makeCanvas();const blob=await new Promise(r=>canvas.toBlob(r,'image/png'));const file=new File([blob],`FEATERA_${$('calendarTitle').textContent}.png`,{type:'image/png'});if(navigator.canShare?.({files:[file]})){await navigator.share({title:$('calendarTitle').textContent,text:'FEATERA 行事曆',files:[file]})}else{const a=document.createElement('a');a.download=file.name;a.href=URL.createObjectURL(blob);a.click();alert('此瀏覽器不支援直接分享，已改為下載 PNG。')}}catch(e){document.body.classList.remove('exporting');if(e.name!=='AbortError')alert('分享失敗：'+e.message)}}
+
+
+
+// ===== v8.0 三個月智慧排課中心 =====
+function getPlannerRange(){
+  const start=new Date(state.month.getFullYear(),state.month.getMonth(),1);
+  const end=new Date(start.getFullYear(),start.getMonth()+3,1);
+  return {start,end,months:[0,1,2].map(i=>monthKey(new Date(start.getFullYear(),start.getMonth()+i,1)))};
+}
+function inRangeDate(date,start,end){const d=parseDate(date);return d>=start&&d<end}
+function daysBetween(a,b){return Math.round((parseDate(b)-parseDate(a))/86400000)}
+function personById(id){return [...state.staff.lecturers,...state.staff.hosts,...state.staff.audio].find(p=>p.id===id)}
+function courseRuleForText(txt){return (state.reference.courseCatalog||[]).find(c=>(c.name&&txt.includes(c.name))||(c.category&&txt.includes(c.category)))}
+function courseRuleForEditor(){
+  const txt=[...document.querySelectorAll('.line-text')].map(x=>x.value).join(' ');
+  return courseRuleForText(txt);
+}
+function assignmentEventsForPerson(id){return state.events.filter(e=>e.lecturerId===id||e.hostId===id)}
+function candidateScore(person,role,ctx){
+  let score=100,reasons=[];
+  const {date,region,type,courseText,lecturer}=ctx;
+  const assignments=assignmentEventsForPerson(person.id).sort((a,b)=>a.date.localeCompare(b.date));
+  const sameDay=assignments.filter(e=>e.date===date);
+  if(sameDay.length){score-=100;reasons.push('當日已有排程')}
+  const prevNear=assignments.filter(e=>e.date<date).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  const nextNear=assignments.filter(e=>e.date>date).sort((a,b)=>a.date.localeCompare(b.date))[0];
+  if(prevNear){const d=daysBetween(prevNear.date,date);if(d===1){score-=35;reasons.push('前一天已有排程')}else if(d<=7){score-=8;reasons.push(`距前次僅 ${d} 天`)}else if(d>=21){score+=8;reasons.push('輪替間隔充足')}}
+  if(nextNear){const d=daysBetween(date,nextNear.date);if(d===1){score-=35;reasons.push('隔天已有排程')}else if(d<=7){score-=8;reasons.push(`距下次僅 ${d} 天`)}}
+  const mk=date.slice(0,7), monthly=assignments.filter(e=>e.date.startsWith(mk)).length;
+  if(role==='lecturer'){
+    if(monthly===0){score+=14;reasons.push('本月尚未授課')}else if(monthly===1){score+=5;reasons.push('本月已授課 1 堂')}else {score-=18*(monthly-1);reasons.push(`本月已授課 ${monthly} 堂`)}
+  } else {
+    if(monthly===0){score+=18;reasons.push('本月尚未主持')}else {score-=24*monthly;reasons.push(`本月已主持 ${monthly} 堂`)}
+  }
+  if(type==='說明會'){
+    if(person.seminarQualified===true){score+=14;reasons.push('具說明會資格')}
+    else if(person.seminarQualified===false){score-=45;reasons.push('名單未標示說明會資格')}
+  }
+  if(region&&Array.isArray(person.regions)&&person.regions.length){
+    if(person.regions.includes(region)){score+=10;reasons.push('符合支援區域')}
+    else {score-=22;reasons.push(`支援區域為 ${person.regions.join('、')}`)}
+  }
+  const rule=courseRuleForText(courseText||'');
+  if(role==='lecturer'&&rule){
+    if(nameMatch(rule.recommendedLecturers||[],person.name)){score+=28;reasons.push('來源表推薦講師')}
+    else if(nameMatch(rule.allowedLecturers||[],person.name)){score+=16;reasons.push('來源表可安排講師')}
+    else if((rule.recommendedLecturers||[]).length||(rule.allowedLecturers||[]).length){score-=12;reasons.push('不在來源表推薦/可安排名單')}
+  }
+  if(role==='host'&&lecturer&&!lecturer.special){
+    const hs=rankScore(person.rank),ls=rankScore(lecturer.rank);
+    if(hs&&ls&&hs>ls){score-=35;reasons.push('主持聘級高於主講')}
+    if((person.stars||0)>(lecturer.stars||0)&&(lecturer.stars||0)>0){score-=35;reasons.push('主持講師星級高於主講')}
+  }
+  return {person,score,reasons};
+}
+function recommendPeople(role,ctx,limit=5){
+  const list=role==='lecturer'?state.staff.lecturers:state.staff.hosts;
+  return list.map(p=>candidateScore(p,role,ctx)).sort((a,b)=>b.score-a.score||a.person.name.localeCompare(b.person.name,'zh-Hant')).slice(0,limit);
+}
+function smartSuggestForEditor(){
+  const date=$('evDate').value,region=$('evRegion').value,type=$('evType').value;
+  if(!date)return alert('請先選擇日期');
+  const courseText=[...document.querySelectorAll('.line-text')].map(x=>x.value).join(' ');
+  const lecturers=recommendPeople('lecturer',{date,region,type,courseText},5);
+  const chosenLecturer=lecturers[0]?.person||null;
+  const hosts=recommendPeople('host',{date,region,type,courseText,lecturer:chosenLecturer},5);
+  if(chosenLecturer)$('evLecturer').value=chosenLecturer.id;
+  if(hosts[0]?.person)$('evHost').value=hosts[0].person.id;
+  const fmt=(x,role)=>`<div class="smart-candidate"><div><b>${esc(x.person.name)}</b> <span class="score-pill">${x.score} 分</span></div><div class="smart-reasons">${esc(x.reasons.slice(0,4).join('｜')||'符合一般輪替條件')}</div><button type="button" class="mini pick-candidate" data-role="${role}" data-id="${esc(x.person.id)}">選用</button></div>`;
+  $('smartSuggestBox').innerHTML=`<div class="smart-title">✨ 智慧推薦（已先選最高分人選）</div><div class="smart-columns"><div><b>講師 TOP 5</b>${lecturers.map(x=>fmt(x,'lecturer')).join('')}</div><div><b>主持人 TOP 5</b>${hosts.map(x=>fmt(x,'host')).join('')}</div></div><div class="panel-note">評分依三個月輪替、相鄰日期、每月安排次數、說明會資格、支援區域、課程推薦名單，以及主持/主講聘級與星級關係計算。此為排程輔助，仍由管理員最後確認。</div>`;
+  document.querySelectorAll('.pick-candidate').forEach(b=>b.onclick=()=>{if(b.dataset.role==='lecturer')$('evLecturer').value=b.dataset.id;else $('evHost').value=b.dataset.id});
+}
+function enhancedValidate3Months(){
+  const {start,end,months}=getPlannerRange();
+  const ev=state.events.filter(e=>inRangeDate(e.date,start,end)).sort((a,b)=>a.date.localeCompare(b.date));
+  const contextStart=new Date(start);contextStart.setDate(contextStart.getDate()-7);
+  const contextEnd=new Date(end);contextEnd.setDate(contextEnd.getDate()+7);
+  const context=state.events.filter(e=>{const d=parseDate(e.date);return d>=contextStart&&d<contextEnd}).sort((a,b)=>a.date.localeCompare(b.date));
+  const w=[];
+  const add=(severity,title,text,date='')=>w.push({severity,title,text,date,severe:severity==='high'});
+  // 人員同日重複與跨月連續安排
+  for(const role of [{key:'lecturerId',label:'講師'},{key:'hostId',label:'主持人'}]){
+    const ids=[...new Set(context.map(e=>e[role.key]).filter(Boolean))];
+    for(const id of ids){
+      const arr=context.filter(e=>e[role.key]===id).sort((a,b)=>a.date.localeCompare(b.date));
+      const p=personById(id);const nm=p?.name||id;
+      const grouped={};arr.forEach(e=>(grouped[e.date]??=[]).push(e));
+      for(const [date,items] of Object.entries(grouped))if(items.length>1&&inRangeDate(date,start,end))add('high',`${role.label}同日重複`,`${nm} 在 ${date} 同日安排 ${items.length} 場，請調整。`,date);
+      for(let i=1;i<arr.length;i++){
+        const d=daysBetween(arr[i-1].date,arr[i].date);
+        if(d===1&&(inRangeDate(arr[i-1].date,start,end)||inRangeDate(arr[i].date,start,end)))add('high',`${role.label}連續安排`,`${nm} 在 ${arr[i-1].date} 與 ${arr[i].date} 連續場次；已包含跨月邊界檢查。`,arr[i].date);
+      }
+    }
+  }
+  // 同一人同日跨角色
+  for(const e of ev){if(e.lecturerId&&e.hostId&&e.lecturerId===e.hostId)add('high','同場角色衝突',`${e.date} 同一人同時被指定為講師與主持人。`,e.date)}
+  // 月頻率與輪替
+  for(const p of state.staff.lecturers){for(const m of months){const c=ev.filter(e=>e.lecturerId===p.id&&e.date.startsWith(m)).length;if(c>2&&!p.special)add('medium','講師安排頻率',`${p.name} ${m} 共 ${c} 堂；來源原則為每月盡量 1–2 堂。`,m)}}
+  for(const p of state.staff.hosts){for(const m of months){const c=ev.filter(e=>e.hostId===p.id&&e.date.startsWith(m)).length;if(c>1)add('medium','主持人輪替',`${p.name} ${m} 共主持 ${c} 堂，建議平均輪替。`,m)}}
+  const feedback=ev.filter(e=>e.type==='健康回饋日');
+  feedback.forEach(e=>{const d=parseDate(e.date),dow=d.getDay(),day=d.getDate();if(['中壢','宜蘭','花蓮','台東'].includes(e.region)&&dow!==0)add('low','回饋日日期偏好',`${e.region} ${e.date} 不是週日；來源建議如整體行程允許優先週日。`,e.date);if(['中壢','台北'].includes(e.region)&&day>14)add('low','回饋日月初偏好',`${e.region} ${e.date} 位於月中後；來源指出中壢/台北通常安排前兩週。`,e.date)});
+  for(const [a,b] of [['宜蘭','花蓮'],['台北','中壢'],['中壢','宜蘭'],['台東','嘉義']])for(const x of feedback.filter(e=>e.region===a))if(feedback.some(e=>e.region===b&&e.date===x.date))add('high','鄰近區域撞期',`${x.date} ${a} 與 ${b} 同日舉辦，建議錯開。`,x.date);
+  const ty=feedback.filter(e=>['台南','高雄'].includes(e.region));for(let i=0;i<ty.length;i++)for(let j=i+1;j<ty.length;j++){const gap=Math.abs(daysBetween(ty[i].date,ty[j].date));if(gap<7&&ty[i].region!==ty[j].region)add('medium','台南/高雄同週過近',`${ty[i].date} ${ty[i].region} 與 ${ty[j].date} ${ty[j].region} 間隔 ${gap} 天，來源建議避免同週連續。`,ty[j].date)}
+  for(const r of REGIONS){const arr=feedback.filter(e=>e.region===r).sort((a,b)=>a.date.localeCompare(b.date));for(let i=1;i<arr.length;i++){const gap=daysBetween(arr[i-1].date,arr[i].date);if(gap<12)add('medium','同區回饋日間隔',`${r} ${arr[i-1].date} 與 ${arr[i].date} 相隔 ${gap} 天，來源建議約兩週。`,arr[i].date)}}
+  feedback.forEach(e=>{const host=state.staff.hosts.find(x=>x.id===e.hostId),lec=state.staff.lecturers.find(x=>x.id===e.lecturerId);if(!host||!lec||lec.special)return;const hs=rankScore(host.rank),ls=rankScore(lec.rank);if((host.stars||0)>(lec.stars||0)&&(lec.stars||0)>0)add('high','主持/講師星級順序',`${e.date} 主持人 ${host.name} 的講師星級高於主講 ${lec.name}，請確認。`,e.date);if(hs&&ls&&hs>ls)add('high','主持/講師聘級順序',`${e.date} 主持人 ${host.name} 聘級高於主講 ${lec.name}，請確認是否屬例外。`,e.date)});
+  ev.forEach(e=>{const lec=state.staff.lecturers.find(x=>x.id===e.lecturerId),host=state.staff.hosts.find(x=>x.id===e.hostId),txt=eventCourseText(e);if(e.type==='說明會'){if(lec&&lec.seminarQualified===false)add('high','講師說明會資格',`${e.date} ${lec.name} 在來源名單未標示說明會主講資格 V。`,e.date);if(host&&host.seminarQualified===false)add('high','主持人說明會資格',`${e.date} ${host.name} 在來源名單未標示說明會資格 V。`,e.date)}for(const p of [lec,host])if(p&&e.region&&Array.isArray(p.regions)&&p.regions.length&&!p.regions.includes(e.region))add('medium','支援區域確認',`${e.date} ${p.name} 名單支援區域為 ${p.regions.join('、')}，本次安排 ${e.region}。`,e.date);const rule=courseRuleForText(txt);if(rule&&lec){const listed=[...(rule.recommendedLecturers||[]),...(rule.allowedLecturers||[])];if(listed.length&&!nameMatch(listed,lec.name))add('low','課程講師建議',`${e.date}「${rule.name||rule.category}」主講 ${lec.name} 不在來源表推薦/可安排名單。`,e.date)}});
+  for(const rule of (state.reference.schedulingRules||[]).filter(x=>x.type==='courseFrequency'))for(const mk of months){const n=ev.filter(e=>e.date.startsWith(mk)&&rule.match.some(t=>eventCourseText(e).includes(t))).length;if(rule.maxPerMonth&&n>rule.maxPerMonth)add('medium','課程頻率提示',`${mk}「${rule.match[0]}」共 ${n} 堂；${rule.message}`,mk)}
+  return dedupeWarnings(w).sort((a,b)=>({high:0,medium:1,low:2}[a.severity]-{high:0,medium:1,low:2}[b.severity])||String(a.date).localeCompare(String(b.date)));
+}
+function validate3Months(){return enhancedValidate3Months()}
+function showValidation(){
+  const warnings=validate3Months(),counts={high:0,medium:0,low:0};warnings.forEach(x=>counts[x.severity]=(counts[x.severity]||0)+1);
+  openModal('三個月排程檢查',`<div class="panel-note">檢查範圍：${getPlannerRange().months.join('、')}。並向前/向後延伸 7 天檢查跨月連續排程。</div><div class="planner-summary"><div class="planner-kpi danger-kpi"><b>${counts.high}</b><span>高優先</span></div><div class="planner-kpi warn-kpi"><b>${counts.medium}</b><span>需留意</span></div><div class="planner-kpi"><b>${counts.low}</b><span>建議</span></div></div><div class="warning-list">${warnings.length?warnings.map(w=>`<div class="warning-item ${w.severity==='high'?'severe':''}"><div class="severity-badge ${w.severity}">${w.severity==='high'?'高':w.severity==='medium'?'中':'低'}</div><b>${esc(w.title)}</b><div>${esc(w.text)}</div></div>`).join(''):'<div class="panel-note">✅ 目前沒有偵測到異常排程。</div>'}</div>`,`<button id="okModal" class="primary">完成</button>`);$('okModal').onclick=closeModal;
+}
+function plannerMonthStats(mk){
+  const ev=state.events.filter(e=>e.date.startsWith(mk));
+  return {events:ev.length,feedback:ev.filter(e=>e.type==='健康回饋日').length,seminar:ev.filter(e=>e.type==='說明會').length,lecturers:new Set(ev.map(e=>e.lecturerId).filter(Boolean)).size,hosts:new Set(ev.map(e=>e.hostId).filter(Boolean)).size};
+}
+function rotationGaps(role,months){
+  const list=role==='lecturer'?state.staff.lecturers:state.staff.hosts,key=role==='lecturer'?'lecturerId':'hostId';
+  return list.map(p=>({p,count:state.events.filter(e=>months.some(m=>e.date.startsWith(m))&&e[key]===p.id).length})).sort((a,b)=>a.count-b.count||a.p.name.localeCompare(b.p.name,'zh-Hant'));
+}
+function smartOpenDateForRegion(region,type){
+  const {start,end}=getPlannerRange(),occupied=new Set(state.events.map(e=>e.date));
+  const candidates=[];for(let d=new Date(start);d<end;d.setDate(d.getDate()+1)){const dt=ymd(d),dow=d.getDay(),day=d.getDate();let score=50,reasons=[];if(type==='健康回饋日'){if(['中壢','宜蘭','花蓮','台東'].includes(region)&&dow===0){score+=20;reasons.push('符合週日偏好')}if(['台北','中壢'].includes(region)&&day<=14){score+=12;reasons.push('符合月初前兩週偏好')}const same=state.events.filter(e=>e.type==='健康回饋日'&&e.date===dt).map(e=>e.region);for(const [a,b] of [['宜蘭','花蓮'],['台北','中壢'],['中壢','宜蘭'],['台東','嘉義']])if((region===a&&same.includes(b))||(region===b&&same.includes(a)))score-=50;const prev=state.events.filter(e=>e.type==='健康回饋日'&&e.region===region&&e.date<dt).sort((a,b)=>b.date.localeCompare(a.date))[0];if(prev&&daysBetween(prev.date,dt)<12)score-=35}if(!occupied.has(dt))score+=4;candidates.push({date:dt,score,reasons})}return candidates.sort((a,b)=>b.score-a.score||a.date.localeCompare(b.date)).slice(0,5);
+}
+function showSmartPlanner(){
+  const {months}=getPlannerRange(),warnings=enhancedValidate3Months();const high=warnings.filter(x=>x.severity==='high').length,med=warnings.filter(x=>x.severity==='medium').length,score=Math.max(0,100-high*12-med*5-warnings.filter(x=>x.severity==='low').length*2);
+  const lecturerRot=rotationGaps('lecturer',months).slice(0,8),hostRot=rotationGaps('host',months).slice(0,8);
+  const monthCards=months.map(m=>{const x=plannerMonthStats(m);return `<div class="planner-month-card"><b>${m}</b><div>總場次 ${x.events}</div><div>回饋日 ${x.feedback}｜說明會 ${x.seminar}</div><div>講師 ${x.lecturers} 人｜主持 ${x.hosts} 人</div></div>`}).join('');
+  openModal('✨ 三個月智慧排課中心',`<div class="planner-hero"><div class="health-score"><b>${score}</b><span>排程健康分</span></div><div><b>範圍：${months.join(' → ')}</b><div>系統依附件規則、Excel 名單、課程推薦及三個月實際排程進行分析。</div></div></div><div class="planner-months">${monthCards}</div><div class="planner-summary"><div class="planner-kpi danger-kpi"><b>${high}</b><span>高優先異常</span></div><div class="planner-kpi warn-kpi"><b>${med}</b><span>需留意</span></div><div class="planner-kpi"><b>${warnings.length}</b><span>全部提示</span></div></div><div class="smart-columns"><div><h3>優先輪替講師</h3>${lecturerRot.map(x=>`<div class="rotation-row"><span>${esc(x.p.name)}</span><b>${x.count} 堂</b></div>`).join('')}</div><div><h3>優先輪替主持人</h3>${hostRot.map(x=>`<div class="rotation-row"><span>${esc(x.p.name)}</span><b>${x.count} 堂</b></div>`).join('')}</div></div><div class="toolbar-row"><button id="plannerValidate" class="primary">查看全部異常</button><button id="plannerFeedback" class="secondary">推薦回饋日日期</button></div><div id="plannerExtra"></div>`,`<button id="plannerClose" class="secondary">關閉</button>`);
+  $('plannerClose').onclick=closeModal;$('plannerValidate').onclick=showValidation;$('plannerFeedback').onclick=()=>{const rows=REGIONS.map(r=>{const arr=smartOpenDateForRegion(r,'健康回饋日').slice(0,3);return `<tr><td><b>${r}</b></td><td>${arr.map(x=>`${x.date}${x.reasons.length?'（'+x.reasons.join('、')+'）':''}`).join('<br>')}</td></tr>`}).join('');$('plannerExtra').innerHTML=`<h3>回饋日建議日期</h3><div class="panel-note">依週日偏好、月初偏好、同區約兩週間隔與指定區域撞期規則排序；仍需人工確認領導人需求與實際場地。</div><table class="history-table"><tr><th>區域</th><th>前三個建議日期</th></tr>${rows}</table>`};
+}
 
 initialize().catch(e=>{console.error(e);alert('系統初始化失敗：'+e.message)});
