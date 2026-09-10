@@ -147,3 +147,10 @@
 .appearance-row{display:grid;grid-template-columns:110px repeat(3,minmax(120px,1fr));gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #e2e6e0}
 .appearance-row label{display:flex;align-items:center;gap:7px;font-size:13px}.appearance-row input[type="color"]{width:48px;height:32px;padding:2px;border:1px solid #bbc5b8;border-radius:6px;background:#fff}.appearance-row input[type="number"],.appearance-row select{min-height:34px;border:1px solid #cbd6c7;border-radius:7px;padding:5px 8px;background:#fff}.appearance-row .check-label{white-space:nowrap}.appearance-row small{grid-column:2/-1;color:#687267}.date-settings-row{grid-template-columns:110px minmax(150px,1fr) minmax(120px,1fr)}
 @media(max-width:700px){.appearance-row,.date-settings-row{grid-template-columns:1fr 1fr}.appearance-row>b{grid-column:1/-1}.appearance-row small{grid-column:1/-1}}
+
+
+/* v7.2 appearance hardening: app.js applies user palette directly with !important.
+   Do not add fixed weekday/date colors here. */
+#weekdayRow .weekday{background-image:none!important;}
+#calendarGrid .date-strip{background-image:none!important;}
+#weekdayRow .weekday.weekend,#calendarGrid .weekend .date-strip,#calendarGrid .holiday .date-strip{color:inherit;}

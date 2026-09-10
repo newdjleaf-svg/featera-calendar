@@ -34,7 +34,16 @@ app.get('/api/state',async(req,res)=>{try{const q=await pool.query("SELECT paylo
 app.put('/api/state',async(req,res)=>{if(!isAdmin(req))return res.status(401).json({error:'需要管理員登入'});const payload=req.body?.payload;if(!payload||typeof payload!=='object')return res.status(400).json({error:'資料格式錯誤'});try{await pool.query("INSERT INTO featera_calendar_state(id,payload,updated_at) VALUES('main',$1,NOW()) ON CONFLICT(id) DO UPDATE SET payload=EXCLUDED.payload,updated_at=NOW()",[payload]);res.json({ok:true,updated_at:new Date().toISOString()})}catch(e){console.error(e);res.status(500).json({error:'資料庫儲存失敗'})}});
 app.get('/api/health',async(req,res)=>{try{await pool.query('SELECT 1');res.json({ok:true,database:true})}catch(e){res.status(500).json({ok:false,database:false})}});
 
-app.use(express.static(__dirname,{extensions:['html']}));
+app.use((req,res,next)=>{
+  if (!req.path.startsWith('/api/')) {
+    res.setHeader('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma','no-cache');
+    res.setHeader('Expires','0');
+    res.setHeader('Surrogate-Control','no-store');
+  }
+  next();
+});
+app.use(express.static(__dirname,{extensions:['html'],etag:false,lastModified:false,maxAge:0}));
 app.use((req,res)=>res.sendFile(path.join(__dirname,'index.html')));
 
 async function init(){

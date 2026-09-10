@@ -119,7 +119,34 @@ function isHolidayEvent(e){
   return /國定假日|連假|元旦|開國紀念日|春節|除夕|清明|勞動節|端午|中秋|國慶|和平紀念日|教師節|行憲紀念日/.test(t);
 }
 function colorValue(color,transparent){return transparent?'transparent':(color||'#ffffff')}
-function renderAll(){ensureAppearance();renderHeader();renderCalendar();renderContacts();$('monthPicker').value=monthKey(state.month)}
+function applyAppearanceStyles(){
+  const a=ensureAppearance();
+  const sheet=$('sheet');
+  if(!sheet)return;
+  // Use direct style properties with !important so legacy stylesheet rules can never override user choices.
+  document.querySelectorAll('#weekdayRow .weekday').forEach((el,i)=>{
+    const w=a.weekdays[i]||DEFAULT_APPEARANCE.weekdays[i];
+    el.style.setProperty('background-color',colorValue(w.bg,w.transparent),'important');
+    el.style.setProperty('color',w.text||'#111111','important');
+  });
+  document.querySelectorAll('#calendarGrid .day.in-month').forEach(day=>{
+    const strip=day.querySelector('.date-strip');
+    if(!strip)return;
+    const dateObj=parseDate(day.dataset.date);
+    const dow=dateObj.getDay();
+    const holiday=day.classList.contains('holiday');
+    const d=a.date;
+    let color=d.text||'#111111';
+    if(holiday&&d.holidayCustom!==false)color=d.holiday||'#d0181d';
+    else if(dow===6)color=d.sat||'#d0181d';
+    else if(dow===0)color=d.sun||'#d0181d';
+    strip.style.setProperty('background-color',colorValue(d.bg,d.transparent),'important');
+    strip.style.setProperty('color',color,'important');
+    strip.style.setProperty('text-align',d.align||'left','important');
+    strip.style.setProperty('font-size',`${Number(d.size)||19}px`,'important');
+  });
+}
+function renderAll(){ensureAppearance();renderHeader();renderCalendar();renderContacts();applyAppearanceStyles();$('monthPicker').value=monthKey(state.month)}
 function renderHeader(){const y=state.month.getFullYear(),m=state.month.getMonth()+1;let title=state.meta.titleTemplate.replaceAll('{Y}',y).replaceAll('{M}',m);if(/^\s*\d{4}年\d{1,2}月行事曆\s*$/.test(title))title=title.replace(/(\d{4})年(\d{1,2})月行事曆/,'$1 年 $2 月行事曆');$('calendarTitle').textContent=title;$('subtitleText').textContent=state.meta.subtitle||'';$('businessHours').textContent=state.meta.businessHours||'';$('hotline').textContent=state.meta.hotline||'';if(state.meta.logo){$('logoImg').src=state.meta.logo;$('logoImg').classList.remove('hidden');$('logoFallback').classList.add('hidden')}else{$('logoImg').classList.add('hidden');$('logoFallback').classList.remove('hidden')}}
 function weeksForMonth(y,m){const first=new Date(y,m,1),last=new Date(y,m+1,0);const monday=(first.getDay()+6)%7;return Math.ceil((monday+last.getDate())/7)}
 function renderCalendar(){
@@ -220,8 +247,11 @@ function showAppearance(){
     <div class="appearance-row"><b>日期位置</b><label><select id="dateAlign"><option value="left" ${a.date.align==='left'?'selected':''}>偏左</option><option value="center" ${a.date.align==='center'?'selected':''}>置中</option><option value="right" ${a.date.align==='right'?'selected':''}>偏右</option></select></label><label>字體大小 <input id="dateSize" type="number" min="10" max="36" value="${Number(a.date.size)||19}"> px</label></div>
   </div>`,`<button id="appearanceCancel" class="secondary">取消</button><button id="appearanceSave" class="primary">儲存並套用</button>`);
   const applyPreset=(kind)=>{document.querySelectorAll('.appearance-row[data-wd]').forEach((row,i)=>{const bg=row.querySelector('.wd-bg'),tr=row.querySelector('.wd-transparent'),tx=row.querySelector('.wd-text');if(kind==='official'){bg.value='#ffffff';tr.checked=false;tx.value=i>4?'#d0181d':'#111111'}else{bg.value=i%2===0?'#2d807d':'#355b22';tr.checked=false;tx.value='#ffffff'}});$('dateBg').value='#ffffff';$('dateTransparent').checked=kind==='official';$('dateText').value='#111111';$('dateSat').value='#d0181d';$('dateSun').value='#d0181d';$('dateHoliday').value='#d0181d';$('holidayCustom').checked=true;$('dateAlign').value=kind==='official'?'left':'center'};
-  $('presetOfficial').onclick=()=>applyPreset('official');$('presetGreen').onclick=()=>applyPreset('green');$('appearanceCancel').onclick=closeModal;
-  $('appearanceSave').onclick=()=>{const next={weekdays:[],date:{}};document.querySelectorAll('.appearance-row[data-wd]').forEach(row=>next.weekdays.push({bg:row.querySelector('.wd-bg').value,transparent:row.querySelector('.wd-transparent').checked,text:row.querySelector('.wd-text').value}));next.date={bg:$('dateBg').value,transparent:$('dateTransparent').checked,text:$('dateText').value,sat:$('dateSat').value,sun:$('dateSun').value,holiday:$('dateHoliday').value,holidayCustom:$('holidayCustom').checked,align:$('dateAlign').value,size:+$('dateSize').value||19};state.meta.appearance=next;saveLocal();closeModal();renderAll()};
+  $('presetOfficial').onclick=()=>{applyPreset('official');preview()};$('presetGreen').onclick=()=>{applyPreset('green');preview()};$('appearanceCancel').onclick=()=>{closeModal();renderAll()};
+  // 即時預覽：調整色卡、透明、日期位置或字級時，先套用到月曆；按儲存才寫入雲端。
+  const preview=()=>{const temp={weekdays:[],date:{}};document.querySelectorAll('.appearance-row[data-wd]').forEach(row=>temp.weekdays.push({bg:row.querySelector('.wd-bg').value,transparent:row.querySelector('.wd-transparent').checked,text:row.querySelector('.wd-text').value}));temp.date={bg:$('dateBg').value,transparent:$('dateTransparent').checked,text:$('dateText').value,sat:$('dateSat').value,sun:$('dateSun').value,holiday:$('dateHoliday').value,holidayCustom:$('holidayCustom').checked,align:$('dateAlign').value,size:+$('dateSize').value||19};const original=state.meta.appearance;state.meta.appearance=temp;renderCalendar();applyAppearanceStyles();state.meta.appearance=original;};
+  document.querySelectorAll('.appearance-settings input,.appearance-settings select').forEach(el=>el.addEventListener('input',preview));
+  $('appearanceSave').onclick=async()=>{const btn=$('appearanceSave');const next={weekdays:[],date:{}};document.querySelectorAll('.appearance-row[data-wd]').forEach(row=>next.weekdays.push({bg:row.querySelector('.wd-bg').value,transparent:row.querySelector('.wd-transparent').checked,text:row.querySelector('.wd-text').value}));next.date={bg:$('dateBg').value,transparent:$('dateTransparent').checked,text:$('dateText').value,sat:$('dateSat').value,sun:$('dateSun').value,holiday:$('dateHoliday').value,holidayCustom:$('holidayCustom').checked,align:$('dateAlign').value,size:+$('dateSize').value||19};state.meta.appearance=next;localStorage.setItem(LS_KEY,JSON.stringify({events:state.events,staff:state.staff,contacts:state.contacts,meta:state.meta,admin:state.admin,history:state.history}));renderAll();if(cloudReady&&state.mode==='admin'){btn.disabled=true;btn.textContent='同步中…';try{await pushCloudState(false)}catch(e){alert('配色已套用於此裝置，但雲端同步失敗：'+e.message)}finally{btn.disabled=false;btn.textContent='儲存並套用'}}closeModal();};
 }
 
 function showLayout(){openModal('版面設定',`<div class="form-grid"><label class="field span2"><span>大標題格式</span><input id="layTitle" value="${esc(state.meta.titleTemplate)}"><small>可使用 {Y} 年、{M} 月，例如：FEATERA {Y}年{M}月行事曆</small></label><label class="field span2"><span>副標題</span><input id="laySubtitle" value="${esc(state.meta.subtitle||'')}"></label><label class="field"><span>公司營業時間</span><input id="layHours" value="${esc(state.meta.businessHours)}"></label><label class="field"><span>客服專線</span><input id="layHotline" value="${esc(state.meta.hotline)}"></label><div class="span2 toolbar-row"><button id="chooseLogo" class="secondary">上傳 / 更換 Logo</button><button id="clearLogo" class="secondary">移除 Logo</button></div><div class="span2"><b>分公司聯絡資訊</b><div id="contactEditors">${state.contacts.map((c,i)=>`<div class="form-grid" style="border-top:1px solid #ddd;padding-top:10px;margin-top:8px"><label class="field"><span>名稱</span><input data-c="${i}" data-k="name" value="${esc(c.name)}"></label><label class="field"><span>地址</span><input data-c="${i}" data-k="address" value="${esc(c.address)}"></label><label class="field"><span>TEL</span><input data-c="${i}" data-k="tel" value="${esc(c.tel)}"></label><label class="field"><span>FAX</span><input data-c="${i}" data-k="fax" value="${esc(c.fax)}"></label></div>`).join('')}</div></div>`, `<button id="layCancel" class="secondary">取消</button><button id="laySave" class="primary">儲存</button>`);$('chooseLogo').onclick=()=>$('logoUpload').click();$('clearLogo').onclick=()=>{state.meta.logo='';renderHeader()};$('layCancel').onclick=closeModal;$('laySave').onclick=()=>{state.meta.titleTemplate=$('layTitle').value||'{Y}年{M}月行事曆';state.meta.subtitle=$('laySubtitle').value;state.meta.businessHours=$('layHours').value;state.meta.hotline=$('layHotline').value;document.querySelectorAll('#contactEditors input[data-c]').forEach(i=>state.contacts[+i.dataset.c][i.dataset.k]=i.value);saveLocal();closeModal();renderAll()}}
