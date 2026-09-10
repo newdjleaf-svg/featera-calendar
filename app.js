@@ -9,7 +9,8 @@ const state={
   month:new Date(2026,8,1), mode:'admin', events:[], staff:{lecturers:[],hosts:[],audio:[]}, contacts:[],
   meta:{titleTemplate:'{Y}年{M}月行事曆',subtitle:'',businessHours:'',hotline:'',logo:''}, admin:{...DEFAULT_ADMIN}, history:[]
 };
-let supabaseClient=null;
+let cloudReady=false;
+let cloudSaveTimer=null;
 
 function uid(prefix='e'){return prefix+Math.random().toString(36).slice(2)+Date.now().toString(36)}
 function pad(n){return String(n).padStart(2,'0')}
@@ -21,7 +22,29 @@ function clone(v){return JSON.parse(JSON.stringify(v))}
 function rankScore(rank){const i=RANKS.indexOf(rank);return i<0?0:i+1}
 function getConfig(){try{return JSON.parse(localStorage.getItem(CONFIG_KEY))||{}}catch{return {}}}
 function saveConfig(c){localStorage.setItem(CONFIG_KEY,JSON.stringify(c))}
-function saveLocal(){localStorage.setItem(LS_KEY,JSON.stringify({events:state.events,staff:state.staff,contacts:state.contacts,meta:state.meta,admin:state.admin,history:state.history}))}
+function cloudPayload(){return {events:state.events,staff:state.staff,contacts:state.contacts,meta:state.meta,history:state.history}}
+function saveLocal(){
+  localStorage.setItem(LS_KEY,JSON.stringify({events:state.events,staff:state.staff,contacts:state.contacts,meta:state.meta,admin:state.admin,history:state.history}));
+  if(cloudReady&&state.mode==='admin')scheduleCloudSave();
+}
+function scheduleCloudSave(){clearTimeout(cloudSaveTimer);cloudSaveTimer=setTimeout(()=>pushCloudState(false),500)}
+async function pullCloudState(){
+  const r=await fetch('/api/state',{cache:'no-store'});
+  if(!r.ok)throw new Error('雲端讀取失敗 ('+r.status+')');
+  const data=await r.json();
+  if(data?.payload&&Object.keys(data.payload).length){Object.assign(state,data.payload);localStorage.setItem(LS_KEY,JSON.stringify({...data.payload,admin:state.admin}));return true}
+  return false;
+}
+async function pushCloudState(showMessage=true){
+  const r=await fetch('/api/state',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({payload:cloudPayload()})});
+  if(!r.ok){const x=await r.json().catch(()=>({}));throw new Error(x.error||'雲端儲存失敗 ('+r.status+')')}
+  if(showMessage)alert('已同步到 Railway PostgreSQL');
+}
+async function cloudLogin(user,pass){
+  const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user,pass})});
+  if(!r.ok)return false;return true;
+}
+async function cloudLogout(){try{await fetch('/api/logout',{method:'POST'})}catch{}}
 async function loadSeed(){
   const r=await fetch('seed.json'); const seed=await r.json();
   state.staff={lecturers:seed.lecturers||[],hosts:seed.hosts||[],audio:seed.audio||[]};
@@ -41,7 +64,7 @@ async function initialize(){
   bind(); renderAll();
 }
 function bind(){
-  $('adminLoginForm').addEventListener('submit',e=>{e.preventDefault();const u=$('loginUser').value.trim(),p=$('loginPass').value;if(u.toLowerCase()===String(state.admin.user).toLowerCase()&&p===state.admin.pass){login('admin')}else $('loginError').textContent='帳號或密碼錯誤'});
+  $('adminLoginForm').addEventListener('submit',async e=>{e.preventDefault();const u=$('loginUser').value.trim(),p=$('loginPass').value;$('loginError').textContent='登入中…';try{if(await cloudLogin(u,p)){state.admin.user=u;state.admin.pass='';await login('admin');$('loginError').textContent=''}else $('loginError').textContent='帳號或密碼錯誤'}catch(err){$('loginError').textContent='登入服務錯誤：'+err.message}});
   $('guestLoginBtn').onclick=()=>login('guest'); $('logoutBtn').onclick=logout;
   $('menuBtn').onclick=toggleSidebar; $('drawerBackdrop').onclick=toggleSidebar;
   $('prevBtn').onclick=()=>changeMonth(-1);$('nextBtn').onclick=()=>changeMonth(1);$('todayBtn').onclick=()=>{const d=new Date();state.month=new Date(d.getFullYear(),d.getMonth(),1);renderAll()};
@@ -52,8 +75,12 @@ function bind(){
   $('modalClose').onclick=closeModal; $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
   $('logoUpload').onchange=handleLogoUpload;
 }
-function login(mode){state.mode=mode;$('loginView').classList.add('hidden');$('app').classList.remove('hidden');$('modeBadge').textContent=mode==='admin'?'管理員':'訪客';document.body.classList.toggle('guest',mode==='guest');document.querySelectorAll('.admin-only').forEach(x=>x.classList.toggle('hidden',mode==='guest'));renderAll()}
-function logout(){$('app').classList.add('hidden');$('loginView').classList.remove('hidden');$('sidebar').classList.remove('open');$('drawerBackdrop').classList.add('hidden')}
+async function login(mode){
+  state.mode=mode;$('loginView').classList.add('hidden');$('app').classList.remove('hidden');$('modeBadge').textContent=mode==='admin'?'管理員':'訪客';document.body.classList.toggle('guest',mode==='guest');document.querySelectorAll('.admin-only').forEach(x=>x.classList.toggle('hidden',mode==='guest'));
+  try{const found=await pullCloudState();cloudReady=true;if(!found&&mode==='admin')await pushCloudState(false)}catch(e){console.warn(e);cloudReady=false;alert('目前無法連接雲端資料庫，暫時使用此裝置資料：'+e.message)}
+  renderAll();
+}
+async function logout(){cloudReady=false;await cloudLogout();$('app').classList.add('hidden');$('loginView').classList.remove('hidden');$('sidebar').classList.remove('open');$('drawerBackdrop').classList.add('hidden')}
 function toggleSidebar(){$('sidebar').classList.toggle('open');$('drawerBackdrop').classList.toggle('hidden',!$('sidebar').classList.contains('open'))}
 function changeMonth(n){state.month=new Date(state.month.getFullYear(),state.month.getMonth()+n,1);renderAll()}
 function renderAll(){renderHeader();renderCalendar();renderContacts();$('monthPicker').value=monthKey(state.month)}
@@ -137,10 +164,8 @@ function showStaff(){let active='lecturers';const draw=()=>{const list=state.sta
 
 function showLayout(){openModal('版面設定',`<div class="form-grid"><label class="field span2"><span>大標題格式</span><input id="layTitle" value="${esc(state.meta.titleTemplate)}"><small>可使用 {Y} 年、{M} 月，例如：FEATERA {Y}年{M}月行事曆</small></label><label class="field span2"><span>副標題</span><input id="laySubtitle" value="${esc(state.meta.subtitle||'')}"></label><label class="field"><span>公司營業時間</span><input id="layHours" value="${esc(state.meta.businessHours)}"></label><label class="field"><span>客服專線</span><input id="layHotline" value="${esc(state.meta.hotline)}"></label><div class="span2 toolbar-row"><button id="chooseLogo" class="secondary">上傳 / 更換 Logo</button><button id="clearLogo" class="secondary">移除 Logo</button></div><div class="span2"><b>分公司聯絡資訊</b><div id="contactEditors">${state.contacts.map((c,i)=>`<div class="form-grid" style="border-top:1px solid #ddd;padding-top:10px;margin-top:8px"><label class="field"><span>名稱</span><input data-c="${i}" data-k="name" value="${esc(c.name)}"></label><label class="field"><span>地址</span><input data-c="${i}" data-k="address" value="${esc(c.address)}"></label><label class="field"><span>TEL</span><input data-c="${i}" data-k="tel" value="${esc(c.tel)}"></label><label class="field"><span>FAX</span><input data-c="${i}" data-k="fax" value="${esc(c.fax)}"></label></div>`).join('')}</div></div>`, `<button id="layCancel" class="secondary">取消</button><button id="laySave" class="primary">儲存</button>`);$('chooseLogo').onclick=()=>$('logoUpload').click();$('clearLogo').onclick=()=>{state.meta.logo='';renderHeader()};$('layCancel').onclick=closeModal;$('laySave').onclick=()=>{state.meta.titleTemplate=$('layTitle').value||'{Y}年{M}月行事曆';state.meta.subtitle=$('laySubtitle').value;state.meta.businessHours=$('layHours').value;state.meta.hotline=$('layHotline').value;document.querySelectorAll('#contactEditors input[data-c]').forEach(i=>state.contacts[+i.dataset.c][i.dataset.k]=i.value);saveLocal();closeModal();renderAll()}}
 function handleLogoUpload(e){const f=e.target.files?.[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{state.meta.logo=rd.result;saveLocal();renderHeader()};rd.readAsDataURL(f);e.target.value=''}
-function showSettings(){const c=getConfig();openModal('系統設定',`<div class="form-grid"><label class="field"><span>管理員帳號</span><input id="setUser" value="${esc(state.admin.user)}"></label><label class="field"><span>管理員密碼</span><input id="setPass" type="password" value="${esc(state.admin.pass)}"></label><label class="field span2"><span>Supabase Project URL</span><input id="sbUrl" placeholder="https://xxxx.supabase.co" value="${esc(c.supabaseUrl||'')}"></label><label class="field span2"><span>Supabase anon key</span><textarea id="sbKey" placeholder="anon public key">${esc(c.supabaseKey||'')}</textarea></label><div class="span2 panel-note">未設定 Supabase 時，資料儲存在此裝置瀏覽器。設定後可由「雲端」上傳或下載共用資料。</div></div>`,`<button id="setCancel" class="secondary">取消</button><button id="setSave" class="primary">儲存</button>`);$('setCancel').onclick=closeModal;$('setSave').onclick=()=>{state.admin.user=$('setUser').value.trim()||'Featera';state.admin.pass=$('setPass').value||'featera168';saveConfig({supabaseUrl:$('sbUrl').value.trim(),supabaseKey:$('sbKey').value.trim()});supabaseClient=null;saveLocal();closeModal();alert('設定已儲存')}}
-function getCloudClient(){const c=getConfig();if(!c.supabaseUrl||!c.supabaseKey)throw new Error('尚未設定 Supabase');if(!supabaseClient)supabaseClient=window.supabase.createClient(c.supabaseUrl,c.supabaseKey);return supabaseClient}
-function cloudPayload(){return {events:state.events,staff:state.staff,contacts:state.contacts,meta:state.meta,admin:state.admin,history:state.history}}
-async function showCloud(){openModal('雲端同步',`<div class="panel-note">上傳：用目前裝置資料覆蓋雲端。下載：用雲端資料覆蓋目前裝置。建議重大修改前先匯出 PNG 或保留備份。</div><div class="toolbar-row"><button id="cloudUpload" class="primary">↑ 上傳到雲端</button><button id="cloudDownload" class="secondary">↓ 從雲端下載</button></div><div id="cloudStatus"></div>`,`<button id="cloudClose" class="secondary">關閉</button>`);$('cloudClose').onclick=closeModal;$('cloudUpload').onclick=async()=>{try{$('cloudStatus').textContent='上傳中…';const sb=getCloudClient();const {error}=await sb.from('featera_calendar_state').upsert({id:'main',payload:cloudPayload(),updated_at:new Date().toISOString()});if(error)throw error;$('cloudStatus').textContent='✅ 已完成雲端上傳'}catch(e){$('cloudStatus').textContent='❌ '+e.message}};$('cloudDownload').onclick=async()=>{try{$('cloudStatus').textContent='下載中…';const sb=getCloudClient();const {data,error}=await sb.from('featera_calendar_state').select('payload').eq('id','main').single();if(error)throw error;if(data?.payload&&Object.keys(data.payload).length){Object.assign(state,data.payload);saveLocal();renderAll()}$('cloudStatus').textContent='✅ 已完成雲端下載'}catch(e){$('cloudStatus').textContent='❌ '+e.message}}}
+function showSettings(){openModal('系統設定',`<div class="form-grid"><div class="span2 panel-note"><b>Railway PostgreSQL 雲端版</b><br>管理員帳號與密碼由 Railway Service Variables 管理：<code>ADMIN_USER</code>、<code>ADMIN_PASSWORD</code>。資料會在管理員儲存修改時自動同步；訪客登入時會自動讀取最新雲端資料。</div></div>`,`<button id="setClose" class="primary">關閉</button>`);$('setClose').onclick=closeModal}
+function showCloud(){openModal('Railway 雲端同步',`<div class="panel-note">目前使用 Railway PostgreSQL。登入時自動下載最新資料；管理員每次儲存修改後會自動上傳。也可在此手動同步。</div><div class="toolbar-row"><button id="cloudUpload" class="primary admin-only">↑ 立即上傳</button><button id="cloudDownload" class="secondary">↓ 重新下載</button></div><div id="cloudStatus"></div>`,`<button id="cloudClose" class="secondary">關閉</button>`);$('cloudClose').onclick=closeModal;if(state.mode==='guest')$('cloudUpload')?.classList.add('hidden');$('cloudUpload')?.addEventListener('click',async()=>{try{$('cloudStatus').textContent='上傳中…';await pushCloudState(false);$('cloudStatus').textContent='✅ 已完成 PostgreSQL 上傳'}catch(e){$('cloudStatus').textContent='❌ '+e.message}});$('cloudDownload').onclick=async()=>{try{$('cloudStatus').textContent='下載中…';await pullCloudState();renderAll();$('cloudStatus').textContent='✅ 已下載最新雲端資料'}catch(e){$('cloudStatus').textContent='❌ '+e.message}}}
 function showStats(){const m=monthKey(state.month),ev=state.events.filter(e=>e.date.startsWith(m)),counts=ev.map(e=>+e.headcount||0),total=counts.reduce((a,b)=>a+b,0),n=counts.filter(x=>x>0).length,avg=n?Math.round(total/n):0;const byRegion={};ev.forEach(e=>{if(e.region)byRegion[e.region]=(byRegion[e.region]||0)+(+e.headcount||0)});openModal('本月人數統計',`<div class="stat-cards"><div class="stat-card"><span>排程場次</span><br><b>${ev.length}</b></div><div class="stat-card"><span>簽到總人數</span><br><b>${total}</b></div><div class="stat-card"><span>有填人數場次平均</span><br><b>${avg}</b></div></div><h3>各區合計</h3><table class="history-table"><tr><th>區域</th><th>人數</th></tr>${Object.entries(byRegion).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')}</table>`,`<button id="statsClose" class="primary">關閉</button>`);$('statsClose').onclick=closeModal}
 function showHistory(){openModal('歷史資料參考',`<div class="panel-note">以下為附件中 2026 年 1–6 月「課程人數（櫃台簽到人數）」的快速摘要；原始附件仍應作為完整核對依據。</div><table class="history-table"><tr><th>月份</th><th>摘要</th></tr>${state.history.map(h=>`<tr><td>${esc(h.month)}</td><td>${esc(h.note)}</td></tr>`).join('')}</table>`,`<button id="histClose" class="primary">關閉</button>`);$('histClose').onclick=closeModal}
 
