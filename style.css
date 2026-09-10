@@ -133,13 +133,19 @@
 }
 .exporting .sheet-head{min-height:76px!important}
 .exporting .weekday-row{background:#fff!important}
-.exporting .weekday{background:#fff!important;color:#111!important}
-.exporting .weekday.weekend{color:#d3151b!important}
+/* v7：星期配色由使用者設定的 inline style 控制，匯出時不再強制覆蓋。 */
 .exporting .calendar-grid{background:#fff!important}
 .exporting .day,
 .exporting .day.blank,
 .exporting .day.in-month{background:#fff!important}
-.exporting .date-strip{background:transparent!important}
+/* v7：日期背景/文字/對齊由使用者設定，匯出時保留。 */
 .exporting .calendar-line,
 .exporting .calendar-line.region-line,
 .exporting .event-block{background:transparent!important}
+
+
+/* v7 可自訂星期/日期配色 */
+.appearance-settings h3{margin:18px 0 8px;color:#255a2a}
+.appearance-row{display:grid;grid-template-columns:110px repeat(3,minmax(120px,1fr));gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #e2e6e0}
+.appearance-row label{display:flex;align-items:center;gap:7px;font-size:13px}.appearance-row input[type="color"]{width:48px;height:32px;padding:2px;border:1px solid #bbc5b8;border-radius:6px;background:#fff}.appearance-row input[type="number"],.appearance-row select{min-height:34px;border:1px solid #cbd6c7;border-radius:7px;padding:5px 8px;background:#fff}.appearance-row .check-label{white-space:nowrap}.appearance-row small{grid-column:2/-1;color:#687267}.date-settings-row{grid-template-columns:110px minmax(150px,1fr) minmax(120px,1fr)}
+@media(max-width:700px){.appearance-row,.date-settings-row{grid-template-columns:1fr 1fr}.appearance-row>b{grid-column:1/-1}.appearance-row small{grid-column:1/-1}}

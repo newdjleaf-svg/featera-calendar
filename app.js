@@ -5,9 +5,21 @@ const DEFAULT_ADMIN={user:'Featera',pass:'featera168'};
 const RANKS=['SM','GM','PM','SD','GD','PD','SP','GP','PP','DP','DDP'];
 const REGIONS=['台北','中壢','宜蘭','花蓮','台中','嘉義','台南','高雄','台東'];
 const COURSE_TYPES=['系統培訓','健康回饋日','說明會','NDO/希望工程','MCC','會議','假日/休假','其他'];
+const DEFAULT_APPEARANCE={
+  weekdays:[
+    {bg:'#ffffff',transparent:false,text:'#111111'},
+    {bg:'#ffffff',transparent:false,text:'#111111'},
+    {bg:'#ffffff',transparent:false,text:'#111111'},
+    {bg:'#ffffff',transparent:false,text:'#111111'},
+    {bg:'#ffffff',transparent:false,text:'#111111'},
+    {bg:'#ffffff',transparent:false,text:'#d0181d'},
+    {bg:'#ffffff',transparent:false,text:'#d0181d'}
+  ],
+  date:{bg:'#ffffff',transparent:true,text:'#111111',sat:'#d0181d',sun:'#d0181d',holiday:'#d0181d',holidayCustom:true,align:'left',size:19}
+};
 const state={
   month:new Date(2026,8,1), mode:'admin', events:[], staff:{lecturers:[],hosts:[],audio:[]}, contacts:[],
-  meta:{titleTemplate:'{Y}年{M}月行事曆',subtitle:'',businessHours:'',hotline:'',logo:''}, admin:{...DEFAULT_ADMIN}, history:[], reference:{lecturers:[],hosts:[],courseCatalog:[],courseNameUpdates:[],schedulingRules:[]}
+  meta:{titleTemplate:'{Y}年{M}月行事曆',subtitle:'',businessHours:'',hotline:'',logo:'',appearance:clone(DEFAULT_APPEARANCE)}, admin:{...DEFAULT_ADMIN}, history:[], reference:{lecturers:[],hosts:[],courseCatalog:[],courseNameUpdates:[],schedulingRules:[]}
 };
 let cloudReady=false;
 let cloudSaveTimer=null;
@@ -78,7 +90,7 @@ function bind(){
   $('prevBtn').onclick=()=>changeMonth(-1);$('nextBtn').onclick=()=>changeMonth(1);$('todayBtn').onclick=()=>{const d=new Date();state.month=new Date(d.getFullYear(),d.getMonth(),1);renderAll()};
   $('monthPicker').onchange=e=>{if(e.target.value){const [y,m]=e.target.value.split('-').map(Number);state.month=new Date(y,m-1,1);renderAll()}};
   $('addEventBtn').onclick=()=>openEventEditor(null,ymd(state.month)); $('validateBtn').onclick=showValidation;
-  $('staffBtn').onclick=showStaff; $('layoutBtn').onclick=showLayout; $('settingsBtn').onclick=showSettings; $('statsBtn').onclick=showStats; $('historyBtn').onclick=showHistory;
+  $('staffBtn').onclick=showStaff; $('layoutBtn').onclick=showLayout; $('appearanceBtn').onclick=showAppearance; $('settingsBtn').onclick=showSettings; $('statsBtn').onclick=showStats; $('historyBtn').onclick=showHistory;
   $('exportBtn').onclick=exportPNG; $('shareBtn').onclick=sharePNG; $('cloudBtn').onclick=showCloud;
   $('modalClose').onclick=closeModal; $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
   $('logoUpload').onchange=handleLogoUpload;
@@ -91,17 +103,38 @@ async function login(mode){
 async function logout(){cloudReady=false;await cloudLogout();$('app').classList.add('hidden');$('loginView').classList.remove('hidden');$('sidebar').classList.remove('open');$('drawerBackdrop').classList.add('hidden')}
 function toggleSidebar(){$('sidebar').classList.toggle('open');$('drawerBackdrop').classList.toggle('hidden',!$('sidebar').classList.contains('open'))}
 function changeMonth(n){state.month=new Date(state.month.getFullYear(),state.month.getMonth()+n,1);renderAll()}
-function renderAll(){renderHeader();renderCalendar();renderContacts();$('monthPicker').value=monthKey(state.month)}
+function ensureAppearance(){
+  if(!state.meta)state.meta={};
+  const a=state.meta.appearance||{};
+  const w=Array.isArray(a.weekdays)?a.weekdays:[];
+  state.meta.appearance={
+    weekdays:DEFAULT_APPEARANCE.weekdays.map((d,i)=>({...d,...(w[i]||{})})),
+    date:{...DEFAULT_APPEARANCE.date,...(a.date||{})}
+  };
+  return state.meta.appearance;
+}
+function isHolidayEvent(e){
+  if(e?.type==='假日/休假')return true;
+  const t=eventCourseText(e);
+  return /國定假日|連假|元旦|開國紀念日|春節|除夕|清明|勞動節|端午|中秋|國慶|和平紀念日|教師節|行憲紀念日/.test(t);
+}
+function colorValue(color,transparent){return transparent?'transparent':(color||'#ffffff')}
+function renderAll(){ensureAppearance();renderHeader();renderCalendar();renderContacts();$('monthPicker').value=monthKey(state.month)}
 function renderHeader(){const y=state.month.getFullYear(),m=state.month.getMonth()+1;let title=state.meta.titleTemplate.replaceAll('{Y}',y).replaceAll('{M}',m);if(/^\s*\d{4}年\d{1,2}月行事曆\s*$/.test(title))title=title.replace(/(\d{4})年(\d{1,2})月行事曆/,'$1 年 $2 月行事曆');$('calendarTitle').textContent=title;$('subtitleText').textContent=state.meta.subtitle||'';$('businessHours').textContent=state.meta.businessHours||'';$('hotline').textContent=state.meta.hotline||'';if(state.meta.logo){$('logoImg').src=state.meta.logo;$('logoImg').classList.remove('hidden');$('logoFallback').classList.add('hidden')}else{$('logoImg').classList.add('hidden');$('logoFallback').classList.remove('hidden')}}
 function weeksForMonth(y,m){const first=new Date(y,m,1),last=new Date(y,m+1,0);const monday=(first.getDay()+6)%7;return Math.ceil((monday+last.getDate())/7)}
 function renderCalendar(){
   const weekdays=['星期一','星期二','星期三','星期四','星期五','星期六','星期日'];
-  $('weekdayRow').innerHTML=weekdays.map((w,i)=>`<div class="weekday ${i>4?'weekend':''}">${w}</div>`).join('');
+  const appearance=ensureAppearance();
+  $('weekdayRow').innerHTML=weekdays.map((w,i)=>{const s=appearance.weekdays[i];return `<div class="weekday ${i>4?'weekend':''}" style="background:${colorValue(s.bg,s.transparent)};color:${s.text}">${w}</div>`}).join('');
   const y=state.month.getFullYear(),m=state.month.getMonth(),first=new Date(y,m,1),days=new Date(y,m+1,0).getDate(),offset=(first.getDay()+6)%7,weeks=weeksForMonth(y,m);let html='';
   for(let i=0;i<weeks*7;i++){
     const d=i-offset+1;if(d<1||d>days){html+=`<div class="day blank"></div>`;continue}
-    const date=ymd(new Date(y,m,d)),dow=new Date(y,m,d).getDay(),evs=state.events.filter(e=>e.date===date).sort((a,b)=>(a.order||0)-(b.order||0));
-    html+=`<div class="day in-month ${dow===0||dow===6?'weekend':''} ${evs.length?'has-events':''}" data-date="${date}"><div class="date-strip">${d}</div><div class="day-content">${evs.map(renderEvent).join('')}</div></div>`;
+    const dateObj=new Date(y,m,d),date=ymd(dateObj),dow=dateObj.getDay(),evs=state.events.filter(e=>e.date===date).sort((a,b)=>(a.order||0)-(b.order||0));
+    const holiday=evs.some(isHolidayEvent),ds=appearance.date;
+    let dateColor=ds.text||'#111111';
+    if(holiday&&ds.holidayCustom!==false)dateColor=ds.holiday||'#d0181d';else if(dow===6)dateColor=ds.sat||'#d0181d';else if(dow===0)dateColor=ds.sun||'#d0181d';
+    const dateStyle=`background:${colorValue(ds.bg,ds.transparent)};color:${dateColor};text-align:${ds.align||'left'};font-size:${Number(ds.size)||19}px`;
+    html+=`<div class="day in-month ${dow===0||dow===6?'weekend':''} ${holiday?'holiday':''} ${evs.length?'has-events':''}" data-date="${date}"><div class="date-strip" style="${dateStyle}">${d}</div><div class="day-content">${evs.map(renderEvent).join('')}</div></div>`;
   }
   $('calendarGrid').innerHTML=html;$('calendarGrid').style.gridTemplateRows=`repeat(${weeks},1fr)`;
   document.querySelectorAll('.day.in-month').forEach(el=>el.addEventListener('dblclick',()=>state.mode==='admin'&&openEventEditor(null,el.dataset.date)));
@@ -172,6 +205,24 @@ function validate3Months(){
 function dedupeWarnings(w){const s=new Set();return w.filter(x=>{const k=x.title+x.text;if(s.has(k))return false;s.add(k);return true})}
 
 function showStaff(){let active='lecturers';const draw=()=>{const list=state.staff[active],isL=active==='lecturers',isH=active==='hosts';$('modalBody').innerHTML=`<div class="tabs"><button class="tab ${active==='lecturers'?'active':''}" data-tab="lecturers">講師</button><button class="tab ${active==='hosts'?'active':''}" data-tab="hosts">主持人</button><button class="tab ${active==='audio'?'active':''}" data-tab="audio">音控</button></div><div class="toolbar-row"><button id="addStaff" class="primary">＋ 新增人員</button></div><table class="staff-table"><thead><tr><th>姓名</th>${isL?'<th>星級</th><th>聘級</th><th>特聘/顧問</th>':isH?'<th>聘級</th>':''}<th>備註</th><th></th></tr></thead><tbody>${list.map(p=>`<tr data-id="${p.id}"><td><input class="s-name" value="${esc(p.name)}"></td>${isL?`<td><select class="s-stars">${[0,1,2,3].map(n=>`<option value="${n}" ${p.stars==n?'selected':''}>${n?`${n}星`:'無'}</option>`).join('')}</select></td><td><select class="s-rank"><option value="">—</option>${RANKS.map(r=>`<option ${p.rank===r?'selected':''}>${r}</option>`).join('')}</select></td><td><input class="s-special" type="checkbox" ${p.special?'checked':''}></td>`:isH?`<td><select class="s-rank"><option value="">—</option>${RANKS.map(r=>`<option ${p.rank===r?'selected':''}>${r}</option>`).join('')}</select></td>`:''}<td><input class="s-note" value="${esc(p.note||'')}" title="${esc([p.seminarQualified?'說明會資格V':'',p.regions?.length?'支援:'+p.regions.join('、'):'',p.seniority||''].filter(Boolean).join('｜'))}"><div style="font-size:11px;color:#666;margin-top:3px">${esc([p.seminarQualified?'說明會V':'',p.regions?.length?p.regions.join('、'):'',p.seniority||''].filter(Boolean).join('｜'))}</div></td><td><button class="danger mini s-del">刪</button></td></tr>`).join('')}</tbody></table>`;document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{active=b.dataset.tab;draw()});$('addStaff').onclick=()=>{const obj={id:uid(active[0]),name:'新成員',note:''};if(active==='lecturers')Object.assign(obj,{stars:1,rank:'',special:false});if(active==='hosts')Object.assign(obj,{rank:'SM',stars:0});state.staff[active].push(obj);draw()};document.querySelectorAll('tbody tr').forEach(tr=>{tr.querySelector('.s-del').onclick=()=>{state.staff[active]=state.staff[active].filter(x=>x.id!==tr.dataset.id);draw()}})};openModal('講師 / 主持 / 音控名單','',`<button id="staffCancel" class="secondary">取消</button><button id="staffSave" class="primary">儲存</button>`);draw();$('staffCancel').onclick=closeModal;$('staffSave').onclick=()=>{document.querySelectorAll('tbody tr').forEach(tr=>{const p=state.staff[active].find(x=>x.id===tr.dataset.id);if(!p)return;p.name=tr.querySelector('.s-name').value;p.note=tr.querySelector('.s-note').value;if(tr.querySelector('.s-rank'))p.rank=tr.querySelector('.s-rank').value;if(tr.querySelector('.s-stars'))p.stars=+tr.querySelector('.s-stars').value;if(tr.querySelector('.s-special'))p.special=tr.querySelector('.s-special').checked});saveLocal();closeModal();renderAll()}}
+
+function showAppearance(){
+  const a=ensureAppearance(),names=['星期一','星期二','星期三','星期四','星期五','星期六','星期日'];
+  const weekdayRows=names.map((name,i)=>{const s=a.weekdays[i];return `<div class="appearance-row" data-wd="${i}"><b>${name}</b><label>背景 <input class="wd-bg" type="color" value="${esc(s.bg||'#ffffff')}"></label><label class="check-label"><input class="wd-transparent" type="checkbox" ${s.transparent?'checked':''}>透明</label><label>文字 <input class="wd-text" type="color" value="${esc(s.text||'#111111')}"></label></div>`}).join('');
+  openModal('星期 / 日期配色設定',`<div class="appearance-settings">
+    <div class="panel-note">此處設定會直接套用到畫面與 PNG 匯出，並同步到 Railway PostgreSQL。透明選項會覆蓋背景色。</div>
+    <div class="toolbar-row"><button id="presetOfficial" class="secondary">官方白底配色</button><button id="presetGreen" class="secondary">綠色星期配色</button></div>
+    <h3>星期欄位</h3>${weekdayRows}
+    <h3>日期欄位</h3>
+    <div class="appearance-row date-settings-row"><b>日期背景</b><label>背景 <input id="dateBg" type="color" value="${esc(a.date.bg||'#ffffff')}"></label><label class="check-label"><input id="dateTransparent" type="checkbox" ${a.date.transparent?'checked':''}>透明</label></div>
+    <div class="appearance-row"><b>日期文字</b><label>一般 <input id="dateText" type="color" value="${esc(a.date.text||'#111111')}"></label><label>週六 <input id="dateSat" type="color" value="${esc(a.date.sat||'#d0181d')}"></label><label>週日 <input id="dateSun" type="color" value="${esc(a.date.sun||'#d0181d')}"></label></div>
+    <div class="appearance-row"><b>國定假日</b><label>顏色 <input id="dateHoliday" type="color" value="${esc(a.date.holiday||'#d0181d')}"></label><label class="check-label"><input id="holidayCustom" type="checkbox" ${a.date.holidayCustom!==false?'checked':''}>使用自訂假日顏色</label><small>取消勾選時，國定假日依一般週六／週日／平日日期色顯示。</small></div>
+    <div class="appearance-row"><b>日期位置</b><label><select id="dateAlign"><option value="left" ${a.date.align==='left'?'selected':''}>偏左</option><option value="center" ${a.date.align==='center'?'selected':''}>置中</option><option value="right" ${a.date.align==='right'?'selected':''}>偏右</option></select></label><label>字體大小 <input id="dateSize" type="number" min="10" max="36" value="${Number(a.date.size)||19}"> px</label></div>
+  </div>`,`<button id="appearanceCancel" class="secondary">取消</button><button id="appearanceSave" class="primary">儲存並套用</button>`);
+  const applyPreset=(kind)=>{document.querySelectorAll('.appearance-row[data-wd]').forEach((row,i)=>{const bg=row.querySelector('.wd-bg'),tr=row.querySelector('.wd-transparent'),tx=row.querySelector('.wd-text');if(kind==='official'){bg.value='#ffffff';tr.checked=false;tx.value=i>4?'#d0181d':'#111111'}else{bg.value=i%2===0?'#2d807d':'#355b22';tr.checked=false;tx.value='#ffffff'}});$('dateBg').value='#ffffff';$('dateTransparent').checked=kind==='official';$('dateText').value='#111111';$('dateSat').value='#d0181d';$('dateSun').value='#d0181d';$('dateHoliday').value='#d0181d';$('holidayCustom').checked=true;$('dateAlign').value=kind==='official'?'left':'center'};
+  $('presetOfficial').onclick=()=>applyPreset('official');$('presetGreen').onclick=()=>applyPreset('green');$('appearanceCancel').onclick=closeModal;
+  $('appearanceSave').onclick=()=>{const next={weekdays:[],date:{}};document.querySelectorAll('.appearance-row[data-wd]').forEach(row=>next.weekdays.push({bg:row.querySelector('.wd-bg').value,transparent:row.querySelector('.wd-transparent').checked,text:row.querySelector('.wd-text').value}));next.date={bg:$('dateBg').value,transparent:$('dateTransparent').checked,text:$('dateText').value,sat:$('dateSat').value,sun:$('dateSun').value,holiday:$('dateHoliday').value,holidayCustom:$('holidayCustom').checked,align:$('dateAlign').value,size:+$('dateSize').value||19};state.meta.appearance=next;saveLocal();closeModal();renderAll()};
+}
 
 function showLayout(){openModal('版面設定',`<div class="form-grid"><label class="field span2"><span>大標題格式</span><input id="layTitle" value="${esc(state.meta.titleTemplate)}"><small>可使用 {Y} 年、{M} 月，例如：FEATERA {Y}年{M}月行事曆</small></label><label class="field span2"><span>副標題</span><input id="laySubtitle" value="${esc(state.meta.subtitle||'')}"></label><label class="field"><span>公司營業時間</span><input id="layHours" value="${esc(state.meta.businessHours)}"></label><label class="field"><span>客服專線</span><input id="layHotline" value="${esc(state.meta.hotline)}"></label><div class="span2 toolbar-row"><button id="chooseLogo" class="secondary">上傳 / 更換 Logo</button><button id="clearLogo" class="secondary">移除 Logo</button></div><div class="span2"><b>分公司聯絡資訊</b><div id="contactEditors">${state.contacts.map((c,i)=>`<div class="form-grid" style="border-top:1px solid #ddd;padding-top:10px;margin-top:8px"><label class="field"><span>名稱</span><input data-c="${i}" data-k="name" value="${esc(c.name)}"></label><label class="field"><span>地址</span><input data-c="${i}" data-k="address" value="${esc(c.address)}"></label><label class="field"><span>TEL</span><input data-c="${i}" data-k="tel" value="${esc(c.tel)}"></label><label class="field"><span>FAX</span><input data-c="${i}" data-k="fax" value="${esc(c.fax)}"></label></div>`).join('')}</div></div>`, `<button id="layCancel" class="secondary">取消</button><button id="laySave" class="primary">儲存</button>`);$('chooseLogo').onclick=()=>$('logoUpload').click();$('clearLogo').onclick=()=>{state.meta.logo='';renderHeader()};$('layCancel').onclick=closeModal;$('laySave').onclick=()=>{state.meta.titleTemplate=$('layTitle').value||'{Y}年{M}月行事曆';state.meta.subtitle=$('laySubtitle').value;state.meta.businessHours=$('layHours').value;state.meta.hotline=$('layHotline').value;document.querySelectorAll('#contactEditors input[data-c]').forEach(i=>state.contacts[+i.dataset.c][i.dataset.k]=i.value);saveLocal();closeModal();renderAll()}}
 function handleLogoUpload(e){const f=e.target.files?.[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{state.meta.logo=rd.result;saveLocal();renderHeader()};rd.readAsDataURL(f);e.target.value=''}
