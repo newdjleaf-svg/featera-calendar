@@ -101,7 +101,7 @@ function renderCalendar(){
   for(let i=0;i<weeks*7;i++){
     const d=i-offset+1;if(d<1||d>days){html+=`<div class="day blank"></div>`;continue}
     const date=ymd(new Date(y,m,d)),dow=new Date(y,m,d).getDay(),evs=state.events.filter(e=>e.date===date).sort((a,b)=>(a.order||0)-(b.order||0));
-    html+=`<div class="day in-month ${dow===0||dow===6?'weekend':''}" data-date="${date}"><div class="date-strip">${d}</div><div class="day-content">${evs.map(renderEvent).join('')}</div></div>`;
+    html+=`<div class="day in-month ${dow===0||dow===6?'weekend':''} ${evs.length?'has-events':''}" data-date="${date}"><div class="date-strip">${d}</div><div class="day-content">${evs.map(renderEvent).join('')}</div></div>`;
   }
   $('calendarGrid').innerHTML=html;$('calendarGrid').style.gridTemplateRows=`repeat(${weeks},1fr)`;
   document.querySelectorAll('.day.in-month').forEach(el=>el.addEventListener('dblclick',()=>state.mode==='admin'&&openEventEditor(null,el.dataset.date)));
