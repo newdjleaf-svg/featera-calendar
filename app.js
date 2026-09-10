@@ -5,6 +5,28 @@ const DEFAULT_ADMIN={user:'Featera',pass:'featera168'};
 const RANKS=['SM','GM','PM','SD','GD','PD','SP','GP','PP','DP','DDP'];
 const REGIONS=['台北','中壢','宜蘭','花蓮','台中','嘉義','台南','高雄','台東'];
 const COURSE_TYPES=['系統培訓','健康回饋日','說明會','NDO/希望工程','MCC','會議','假日/休假','其他'];
+
+const DJ_USER_DEFAULT='featera_dj';
+const DJ_REGIONS=['高雄','花蓮','宜蘭','嘉義','台南','中壢','台北','台中','台東'];
+const DJ_WEEKDAY_REGIONS={1:['高雄','花蓮'],2:['宜蘭','嘉義'],3:['台南','中壢'],4:['台北'],5:['台中','台東']};
+const DEFAULT_DJ_META={titleTemplate:'{Y}年{M}月份音控擔任表',branchLabel:'分公司',dateLabel:'日期',audioLabel:'音控',feedbackLabel:'健康回饋日',titleColor:'#16831f',weekdayBg:'#eef1df',weekdayText:'#176aa1',weekendText:'#c71920',dateBg:'#e7e4f3',audioBg:'#fae8dc',gridColor:'#111111',logo:''};
+const DEFAULT_DJ_STAFF=[
+  ['林俊賢',['宜蘭','花蓮']],['胡姿因',['嘉義']],['謝旻翰',['台南','台中','嘉義']],['葉丞緯',['中壢']],['陳廷軒',['台北']],['黃瑞祺',['台東']],['翟偉翔',['台北']],['楊恆睿',['台中']],['徐湘芸',['花蓮']],['侯博智',['高雄']],['陳昱儒',['宜蘭']],['賴筱雯',['嘉義']],['陳麗莉',['台南']],['邱繼炎',['中壢']],['游明烽',['中壢']],['薛妙芬',['高雄']],['謝宏寬',['台東']]
+].map((x,i)=>({id:'dj'+(i+1),name:x[0],regions:x[1],note:''}));
+const DEFAULT_DJ_SCHEDULE=[
+ ['2026-09-01','宜蘭','林俊賢'],['2026-09-01','嘉義','胡姿因'],['2026-09-02','台南','謝旻翰'],['2026-09-02','中壢','葉丞緯'],['2026-09-03','台北','陳廷軒'],['2026-09-04','台中','謝旻翰'],['2026-09-04','台東','黃瑞祺'],
+ ['2026-09-05','台北','翟偉翔'],['2026-09-05','台中','楊恆睿'],['2026-09-06','花蓮','徐湘芸'],['2026-09-06','嘉義','謝旻翰'],['2026-09-07','高雄','侯博智'],['2026-09-07','花蓮','徐湘芸'],['2026-09-08','宜蘭','陳昱儒'],['2026-09-08','嘉義','賴筱雯'],
+ ['2026-09-09','台南','陳麗莉'],['2026-09-09','中壢','邱繼炎'],['2026-09-10','台北','翟偉翔'],['2026-09-11','台中','楊恆睿'],['2026-09-11','台東','謝宏寬'],['2026-09-12','中壢','游明烽'],['2026-09-12','高雄','薛妙芬'],['2026-09-13','宜蘭','林俊賢'],['2026-09-13','台東','謝宏寬'],['2026-09-13','台南','謝旻翰'],
+ ['2026-09-14','高雄','薛妙芬'],['2026-09-14','花蓮','林俊賢'],['2026-09-15','宜蘭','陳昱儒'],['2026-09-15','嘉義','胡姿因'],['2026-09-16','台南','謝旻翰'],['2026-09-16','中壢','游明烽'],['2026-09-17','台北','陳廷軒'],
+ ['2026-09-24','台北','翟偉翔'],['2026-09-29','宜蘭','林俊賢'],['2026-09-29','嘉義','賴筱雯'],['2026-09-30','台南','陳麗莉'],['2026-09-30','中壢','邱繼炎']
+].map((x,i)=>({id:'djs'+(i+1),date:x[0],region:x[1],personId:DEFAULT_DJ_STAFF.find(p=>p.name===x[2])?.id||'',text:x[2],size:16,color:'#111111',align:'center',bold:false,italic:false,underline:false,note:''})).concat([
+  ...['18','19','20','21','22','23'].map((d,i)=>({id:'djsp'+i,date:`2026-09-${d}`,region:'全區',personId:'',text:'越南之旅',size:16,color:'#16831f',align:'center',bold:true,italic:false,underline:false,note:'',kind:'special'})),
+  {id:'djsp7',date:'2026-09-25',region:'全區',personId:'',text:'中秋節',size:16,color:'#c71920',align:'center',bold:true,italic:false,underline:false,note:'',kind:'special'},
+  {id:'djsp8',date:'2026-09-26',region:'全區',personId:'',text:'中秋節連假',size:16,color:'#c71920',align:'center',bold:true,italic:false,underline:false,note:'',kind:'special'},
+  {id:'djsp9',date:'2026-09-27',region:'全區',personId:'',text:'中秋節連假',size:16,color:'#c71920',align:'center',bold:true,italic:false,underline:false,note:'',kind:'special'},
+  {id:'djsp10',date:'2026-09-28',region:'全區',personId:'',text:'教師節',size:16,color:'#c71920',align:'center',bold:true,italic:false,underline:false,note:'',kind:'special'}
+]);
+
 const DEFAULT_APPEARANCE={
   weekdays:[
     {bg:'#ffffff',transparent:false,text:'#111111'},
@@ -18,7 +40,8 @@ const DEFAULT_APPEARANCE={
   date:{bg:'#ffffff',transparent:true,text:'#111111',sat:'#d0181d',sun:'#d0181d',holiday:'#d0181d',holidayCustom:true,align:'left',size:19}
 };
 const state={
-  month:new Date(2026,8,1), mode:'admin', events:[], staff:{lecturers:[],hosts:[],audio:[]}, contacts:[],
+  month:new Date(2026,8,1), mode:'admin', view:'calendar', events:[], staff:{lecturers:[],hosts:[],audio:[]}, contacts:[],
+  audioMonth:new Date(2026,8,1), audioState:{schedule:[],staff:[],meta:clone(DEFAULT_DJ_META)}, audioContext:{events:[],hosts:[]},
   meta:{titleTemplate:'{Y}年{M}月行事曆',subtitle:'',businessHours:'',hotline:'',logo:'',appearance:clone(DEFAULT_APPEARANCE)}, admin:{...DEFAULT_ADMIN}, history:[], reference:{lecturers:[],hosts:[],courseCatalog:[],courseNameUpdates:[],schedulingRules:[]}
 };
 let cloudReady=false;
@@ -54,7 +77,7 @@ async function pushCloudState(showMessage=true){
 }
 async function cloudLogin(user,pass){
   const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user,pass})});
-  if(!r.ok)return false;return true;
+  if(!r.ok)return null;return await r.json();
 }
 async function cloudLogout(){try{await fetch('/api/logout',{method:'POST'})}catch{}}
 async function loadSeed(){
@@ -84,20 +107,33 @@ async function initialize(){
   bind(); renderAll();
 }
 function bind(){
-  $('adminLoginForm').addEventListener('submit',async e=>{e.preventDefault();const u=$('loginUser').value.trim(),p=$('loginPass').value;$('loginError').textContent='登入中…';try{if(await cloudLogin(u,p)){state.admin.user=u;state.admin.pass='';await login('admin');$('loginError').textContent=''}else $('loginError').textContent='帳號或密碼錯誤'}catch(err){$('loginError').textContent='登入服務錯誤：'+err.message}});
+  $('adminLoginForm').addEventListener('submit',async e=>{e.preventDefault();const u=$('loginUser').value.trim(),p=$('loginPass').value;$('loginError').textContent='登入中…';try{const x=await cloudLogin(u,p);if(x?.role==='admin'){state.admin.user=u;state.admin.pass='';await login('admin');$('loginError').textContent=''}else $('loginError').textContent='帳號或密碼錯誤'}catch(err){$('loginError').textContent='登入服務錯誤：'+err.message}});
+  $('djLoginForm').addEventListener('submit',async e=>{e.preventDefault();const u=$('djLoginUser').value.trim(),p=$('djLoginPass').value;$('loginError').textContent='登入中…';try{const x=await cloudLogin(u,p);if(x?.role==='dj'){await login('dj');$('loginError').textContent=''}else $('loginError').textContent='音控帳號或密碼錯誤'}catch(err){$('loginError').textContent='登入服務錯誤：'+err.message}});
   $('guestLoginBtn').onclick=()=>login('guest'); $('logoutBtn').onclick=logout;
   $('menuBtn').onclick=toggleSidebar; $('drawerBackdrop').onclick=toggleSidebar;
   $('prevBtn').onclick=()=>changeMonth(-1);$('nextBtn').onclick=()=>changeMonth(1);$('todayBtn').onclick=()=>{const d=new Date();state.month=new Date(d.getFullYear(),d.getMonth(),1);renderAll()};
   $('monthPicker').onchange=e=>{if(e.target.value){const [y,m]=e.target.value.split('-').map(Number);state.month=new Date(y,m-1,1);renderAll()}};
   $('addEventBtn').onclick=()=>openEventEditor(null,ymd(state.month)); $('plannerBtn').onclick=showSmartPlanner; $('validateBtn').onclick=showValidation;
-  $('staffBtn').onclick=showStaff; $('layoutBtn').onclick=showLayout; $('appearanceBtn').onclick=showAppearance; $('settingsBtn').onclick=showSettings; $('statsBtn').onclick=showStats; $('historyBtn').onclick=showHistory;
+  $('staffBtn').onclick=showStaff; $('audioBtn').onclick=()=>openAudioWorkspace(); $('layoutBtn').onclick=showLayout; $('appearanceBtn').onclick=showAppearance; $('settingsBtn').onclick=showSettings; $('statsBtn').onclick=showStats; $('historyBtn').onclick=showHistory;
   $('exportBtn').onclick=exportPNG; $('shareBtn').onclick=sharePNG; $('cloudBtn').onclick=showCloud;
   $('modalClose').onclick=closeModal; $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
-  $('logoUpload').onchange=handleLogoUpload;
+  $('logoUpload').onchange=handleLogoUpload; bindAudioControls();
 }
 async function login(mode){
-  state.mode=mode;$('loginView').classList.add('hidden');$('app').classList.remove('hidden');$('modeBadge').textContent=mode==='admin'?'管理員':'訪客';document.body.classList.toggle('guest',mode==='guest');document.querySelectorAll('.admin-only').forEach(x=>x.classList.toggle('hidden',mode==='guest'));
-  try{const found=await pullCloudState();cloudReady=true;if(!found&&mode==='admin')await pushCloudState(false)}catch(e){console.warn(e);cloudReady=false;alert('目前無法連接雲端資料庫，暫時使用此裝置資料：'+e.message)}
+  state.mode=mode;state.view=mode==='dj'?'audio':'calendar';
+  $('loginView').classList.add('hidden');$('app').classList.remove('hidden');
+  $('modeBadge').textContent=mode==='admin'?'管理員':mode==='dj'?'音控':'訪客';
+  document.body.classList.toggle('guest',mode==='guest');document.body.classList.toggle('dj-mode',mode==='dj');
+  document.querySelectorAll('.admin-only').forEach(x=>x.classList.toggle('hidden',mode!=='admin'));
+  document.querySelectorAll('.dj-editor-only').forEach(x=>x.classList.toggle('hidden',!['admin','dj'].includes(mode)));
+  try{
+    if(mode==='dj'){
+      await pullCloudState();
+      await pullAudioState();cloudReady=true;openAudioWorkspace(false);
+    }else{
+      const found=await pullCloudState();cloudReady=true;if(!found&&mode==='admin')await pushCloudState(false);showCalendarWorkspace();
+    }
+  }catch(e){console.warn(e);cloudReady=false;alert('目前無法連接雲端資料庫：'+e.message)}
   renderAll();
 }
 async function logout(){cloudReady=false;await cloudLogout();$('app').classList.add('hidden');$('loginView').classList.remove('hidden');$('sidebar').classList.remove('open');$('drawerBackdrop').classList.add('hidden')}
@@ -197,7 +233,6 @@ function openEventEditor(id,date){
     <label class="field"><span>統計人數</span><input id="evCount" type="number" min="0" value="${esc(obj.headcount||'')}"></label>
     <label class="field"><span>講師</span><select id="evLecturer">${personOptions(state.staff.lecturers,obj.lecturerId)}</select></label>
     <label class="field"><span>主持人</span><select id="evHost">${personOptions(state.staff.hosts,obj.hostId)}</select></label>
-    <label class="field"><span>音控</span><select id="evAudio">${personOptions(state.staff.audio,obj.audioId)}</select></label>
     <label class="field"><span>第一行樣式</span><select id="evHighlight"><option value="1" ${obj.highlight?'selected':''}>標準</option><option value="0" ${!obj.highlight?'selected':''}>標準</option></select></label>
     <label class="field span2"><span>附註事項</span><textarea id="evNote">${esc(obj.note||'')}</textarea></label>
     <div class="span2"><div class="toolbar-row"><b>顯示文字（每行可獨立格式）</b><button id="addLineBtn" type="button" class="secondary">＋新增一行</button><button id="autoFillBtn" type="button" class="secondary">依人員自動帶入</button><button id="smartSuggestBtn" type="button" class="primary">✨ 智慧推薦人員</button></div><div id="smartSuggestBox" class="smart-suggest-box"></div><div id="lineEditors">${lineEditorHtml(obj.lines||[])}</div></div>
@@ -207,8 +242,8 @@ function openEventEditor(id,date){
 }
 function wireLineEditors(){document.querySelectorAll('.line-editor').forEach(row=>{row.querySelectorAll('.toggle').forEach(btn=>btn.onclick=()=>btn.classList.toggle('active'));row.querySelector('.remove-line').onclick=()=>row.remove()})}
 function collectLines(){return [...document.querySelectorAll('.line-editor')].map(row=>({text:row.querySelector('.line-text').value,size:+row.querySelector('.line-size').value||14,color:row.querySelector('.line-color').value,align:row.querySelector('.line-align').value,bold:row.querySelector('.line-bold').classList.contains('active'),italic:row.querySelector('.line-italic').classList.contains('active'),underline:row.querySelector('.line-underline').classList.contains('active')})).filter(x=>x.text.trim())}
-function autofillEventLines(){const region=$('evRegion').value,lec=state.staff.lecturers.find(x=>x.id===$('evLecturer').value),host=state.staff.hosts.find(x=>x.id===$('evHost').value),audio=state.staff.audio.find(x=>x.id===$('evAudio').value);const lines=[];if(region)lines.push({text:region,size:16,color:'#111111',align:'left',bold:true});if(host)lines.push({text:`主持：${host.name} ${host.rank||''}`.trim(),size:13,color:'#555555',align:'left'});if(lec)lines.push({text:`講師：${lec.name}${lec.stars?' '+['','一星','二星','三星'][lec.stars]+'講師':''}`,size:13,color:'#555555',align:'left'});if(audio)lines.push({text:`音控：${audio.name}`,size:12,color:'#666666',align:'left'});$('lineEditors').innerHTML=lineEditorHtml(lines);wireLineEditors()}
-function saveEvent(id){const obj={id:id||uid(),date:$('evDate').value,type:$('evType').value,region:$('evRegion').value,lecturerId:$('evLecturer').value,hostId:$('evHost').value,audioId:$('evAudio').value,headcount:$('evCount').value,note:$('evNote').value,highlight:$('evHighlight').value==='1',lines:collectLines(),order:0};if(!obj.date)return alert('請選擇日期');const idx=state.events.findIndex(x=>x.id===obj.id);if(idx>=0)state.events[idx]=obj;else state.events.push(obj);saveLocal();closeModal();renderAll()}
+function autofillEventLines(){const region=$('evRegion').value,lec=state.staff.lecturers.find(x=>x.id===$('evLecturer').value),host=state.staff.hosts.find(x=>x.id===$('evHost').value);const lines=[];if(region)lines.push({text:region,size:16,color:'#111111',align:'left',bold:true});if(host)lines.push({text:`主持：${host.name} ${host.rank||''}`.trim(),size:13,color:'#555555',align:'left'});if(lec)lines.push({text:`講師：${lec.name}${lec.stars?' '+['','一星','二星','三星'][lec.stars]+'講師':''}`,size:13,color:'#555555',align:'left'});$('lineEditors').innerHTML=lineEditorHtml(lines);wireLineEditors()}
+function saveEvent(id){const existing=id?state.events.find(x=>x.id===id):null;const obj={id:id||uid(),date:$('evDate').value,type:$('evType').value,region:$('evRegion').value,lecturerId:$('evLecturer').value,hostId:$('evHost').value,audioId:existing?.audioId||'',headcount:$('evCount').value,note:$('evNote').value,highlight:$('evHighlight').value==='1',lines:collectLines(),order:0};if(!obj.date)return alert('請選擇日期');const idx=state.events.findIndex(x=>x.id===obj.id);if(idx>=0)state.events[idx]=obj;else state.events.push(obj);saveLocal();closeModal();renderAll()}
 
 function showValidation(){const warnings=validate3Months();openModal('三個月排程檢查',`<div class="panel-note">檢查範圍：${monthKey(state.month)} 起連續三個月。提示依「行事曆安排注意事項」整理，屬排程提醒，不會自動更改行程。</div><div class="warning-list">${warnings.length?warnings.map(w=>`<div class="warning-item ${w.severe?'severe':''}"><b>${esc(w.title)}</b><div>${esc(w.text)}</div></div>`).join(''):'<div class="panel-note">目前沒有偵測到異常排程。</div>'}</div>`,`<button id="okModal" class="primary">完成</button>`);$('okModal').onclick=closeModal}
 function validate3Months(){
@@ -231,7 +266,7 @@ function validate3Months(){
 }
 function dedupeWarnings(w){const s=new Set();return w.filter(x=>{const k=x.title+x.text;if(s.has(k))return false;s.add(k);return true})}
 
-function showStaff(){let active='lecturers';const draw=()=>{const list=state.staff[active],isL=active==='lecturers',isH=active==='hosts';$('modalBody').innerHTML=`<div class="tabs"><button class="tab ${active==='lecturers'?'active':''}" data-tab="lecturers">講師</button><button class="tab ${active==='hosts'?'active':''}" data-tab="hosts">主持人</button><button class="tab ${active==='audio'?'active':''}" data-tab="audio">音控</button></div><div class="toolbar-row"><button id="addStaff" class="primary">＋ 新增人員</button></div><table class="staff-table"><thead><tr><th>姓名</th>${isL?'<th>星級</th><th>聘級</th><th>特聘/顧問</th>':isH?'<th>聘級</th>':''}<th>備註</th><th></th></tr></thead><tbody>${list.map(p=>`<tr data-id="${p.id}"><td><input class="s-name" value="${esc(p.name)}"></td>${isL?`<td><select class="s-stars">${[0,1,2,3].map(n=>`<option value="${n}" ${p.stars==n?'selected':''}>${n?`${n}星`:'無'}</option>`).join('')}</select></td><td><select class="s-rank"><option value="">—</option>${RANKS.map(r=>`<option ${p.rank===r?'selected':''}>${r}</option>`).join('')}</select></td><td><input class="s-special" type="checkbox" ${p.special?'checked':''}></td>`:isH?`<td><select class="s-rank"><option value="">—</option>${RANKS.map(r=>`<option ${p.rank===r?'selected':''}>${r}</option>`).join('')}</select></td>`:''}<td><input class="s-note" value="${esc(p.note||'')}" title="${esc([p.seminarQualified?'說明會資格V':'',p.regions?.length?'支援:'+p.regions.join('、'):'',p.seniority||''].filter(Boolean).join('｜'))}"><div style="font-size:11px;color:#666;margin-top:3px">${esc([p.seminarQualified?'說明會V':'',p.regions?.length?p.regions.join('、'):'',p.seniority||''].filter(Boolean).join('｜'))}</div></td><td><button class="danger mini s-del">刪</button></td></tr>`).join('')}</tbody></table>`;document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{active=b.dataset.tab;draw()});$('addStaff').onclick=()=>{const obj={id:uid(active[0]),name:'新成員',note:''};if(active==='lecturers')Object.assign(obj,{stars:1,rank:'',special:false});if(active==='hosts')Object.assign(obj,{rank:'SM',stars:0});state.staff[active].push(obj);draw()};document.querySelectorAll('tbody tr').forEach(tr=>{tr.querySelector('.s-del').onclick=()=>{state.staff[active]=state.staff[active].filter(x=>x.id!==tr.dataset.id);draw()}})};openModal('講師 / 主持 / 音控名單','',`<button id="staffCancel" class="secondary">取消</button><button id="staffSave" class="primary">儲存</button>`);draw();$('staffCancel').onclick=closeModal;$('staffSave').onclick=()=>{document.querySelectorAll('tbody tr').forEach(tr=>{const p=state.staff[active].find(x=>x.id===tr.dataset.id);if(!p)return;p.name=tr.querySelector('.s-name').value;p.note=tr.querySelector('.s-note').value;if(tr.querySelector('.s-rank'))p.rank=tr.querySelector('.s-rank').value;if(tr.querySelector('.s-stars'))p.stars=+tr.querySelector('.s-stars').value;if(tr.querySelector('.s-special'))p.special=tr.querySelector('.s-special').checked});saveLocal();closeModal();renderAll()}}
+function showStaff(){let active='lecturers';const draw=()=>{const list=state.staff[active],isL=active==='lecturers',isH=active==='hosts';$('modalBody').innerHTML=`<div class="tabs"><button class="tab ${active==='lecturers'?'active':''}" data-tab="lecturers">講師</button><button class="tab ${active==='hosts'?'active':''}" data-tab="hosts">主持人</button></div><div class="toolbar-row"><button id="addStaff" class="primary">＋ 新增人員</button></div><table class="staff-table"><thead><tr><th>姓名</th>${isL?'<th>星級</th><th>聘級</th><th>特聘/顧問</th>':isH?'<th>聘級</th>':''}<th>備註</th><th></th></tr></thead><tbody>${list.map(p=>`<tr data-id="${p.id}"><td><input class="s-name" value="${esc(p.name)}"></td>${isL?`<td><select class="s-stars">${[0,1,2,3].map(n=>`<option value="${n}" ${p.stars==n?'selected':''}>${n?`${n}星`:'無'}</option>`).join('')}</select></td><td><select class="s-rank"><option value="">—</option>${RANKS.map(r=>`<option ${p.rank===r?'selected':''}>${r}</option>`).join('')}</select></td><td><input class="s-special" type="checkbox" ${p.special?'checked':''}></td>`:isH?`<td><select class="s-rank"><option value="">—</option>${RANKS.map(r=>`<option ${p.rank===r?'selected':''}>${r}</option>`).join('')}</select></td>`:''}<td><input class="s-note" value="${esc(p.note||'')}" title="${esc([p.seminarQualified?'說明會資格V':'',p.regions?.length?'支援:'+p.regions.join('、'):'',p.seniority||''].filter(Boolean).join('｜'))}"><div style="font-size:11px;color:#666;margin-top:3px">${esc([p.seminarQualified?'說明會V':'',p.regions?.length?p.regions.join('、'):'',p.seniority||''].filter(Boolean).join('｜'))}</div></td><td><button class="danger mini s-del">刪</button></td></tr>`).join('')}</tbody></table>`;document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{active=b.dataset.tab;draw()});$('addStaff').onclick=()=>{const obj={id:uid(active[0]),name:'新成員',note:''};if(active==='lecturers')Object.assign(obj,{stars:1,rank:'',special:false});if(active==='hosts')Object.assign(obj,{rank:'SM',stars:0});state.staff[active].push(obj);draw()};document.querySelectorAll('tbody tr').forEach(tr=>{tr.querySelector('.s-del').onclick=()=>{state.staff[active]=state.staff[active].filter(x=>x.id!==tr.dataset.id);draw()}})};openModal('講師 / 主持人名單','',`<button id="staffCancel" class="secondary">取消</button><button id="staffSave" class="primary">儲存</button>`);draw();$('staffCancel').onclick=closeModal;$('staffSave').onclick=()=>{document.querySelectorAll('tbody tr').forEach(tr=>{const p=state.staff[active].find(x=>x.id===tr.dataset.id);if(!p)return;p.name=tr.querySelector('.s-name').value;p.note=tr.querySelector('.s-note').value;if(tr.querySelector('.s-rank'))p.rank=tr.querySelector('.s-rank').value;if(tr.querySelector('.s-stars'))p.stars=+tr.querySelector('.s-stars').value;if(tr.querySelector('.s-special'))p.special=tr.querySelector('.s-special').checked});saveLocal();closeModal();renderAll()}}
 
 function showAppearance(){
   const a=ensureAppearance(),names=['星期一','星期二','星期三','星期四','星期五','星期六','星期日'];
@@ -397,5 +432,118 @@ function showSmartPlanner(){
   openModal('✨ 三個月智慧排課中心',`<div class="planner-hero"><div class="health-score"><b>${score}</b><span>排程健康分</span></div><div><b>範圍：${months.join(' → ')}</b><div>系統依附件規則、Excel 名單、課程推薦及三個月實際排程進行分析。</div></div></div><div class="planner-months">${monthCards}</div><div class="planner-summary"><div class="planner-kpi danger-kpi"><b>${high}</b><span>高優先異常</span></div><div class="planner-kpi warn-kpi"><b>${med}</b><span>需留意</span></div><div class="planner-kpi"><b>${warnings.length}</b><span>全部提示</span></div></div><div class="smart-columns"><div><h3>優先輪替講師</h3>${lecturerRot.map(x=>`<div class="rotation-row"><span>${esc(x.p.name)}</span><b>${x.count} 堂</b></div>`).join('')}</div><div><h3>優先輪替主持人</h3>${hostRot.map(x=>`<div class="rotation-row"><span>${esc(x.p.name)}</span><b>${x.count} 堂</b></div>`).join('')}</div></div><div class="toolbar-row"><button id="plannerValidate" class="primary">查看全部異常</button><button id="plannerFeedback" class="secondary">推薦回饋日日期</button></div><div id="plannerExtra"></div>`,`<button id="plannerClose" class="secondary">關閉</button>`);
   $('plannerClose').onclick=closeModal;$('plannerValidate').onclick=showValidation;$('plannerFeedback').onclick=()=>{const rows=REGIONS.map(r=>{const arr=smartOpenDateForRegion(r,'健康回饋日').slice(0,3);return `<tr><td><b>${r}</b></td><td>${arr.map(x=>`${x.date}${x.reasons.length?'（'+x.reasons.join('、')+'）':''}`).join('<br>')}</td></tr>`}).join('');$('plannerExtra').innerHTML=`<h3>回饋日建議日期</h3><div class="panel-note">依週日偏好、月初偏好、同區約兩週間隔與指定區域撞期規則排序；仍需人工確認領導人需求與實際場地。</div><table class="history-table"><tr><th>區域</th><th>前三個建議日期</th></tr>${rows}</table>`};
 }
+
+// ===== v9.0 音控獨立排程中心 =====
+function ensureAudioState(){
+  if(!state.audioState||typeof state.audioState!=='object')state.audioState={schedule:[],staff:[],meta:clone(DEFAULT_DJ_META)};
+  if(!Array.isArray(state.audioState.staff)||!state.audioState.staff.length)state.audioState.staff=clone(DEFAULT_DJ_STAFF);
+  if(!Array.isArray(state.audioState.schedule)||!state.audioState.schedule.length)state.audioState.schedule=clone(DEFAULT_DJ_SCHEDULE);
+  state.audioState.meta={...DEFAULT_DJ_META,...(state.audioState.meta||{})};
+  if(!Array.isArray(state.audioState.meta.weekdayLabels))state.audioState.meta.weekdayLabels=['星期一','星期二','星期三','星期四','星期五','星期六','星期日'];
+}
+async function pullAudioState(){
+  const r=await fetch('/api/audio-state',{cache:'no-store'});if(!r.ok)throw new Error('音控雲端讀取失敗 ('+r.status+')');
+  const data=await r.json();state.audioContext={events:data.events||[],hosts:data.hosts||[]};
+  if(data.payload&&Object.keys(data.payload).length)state.audioState={schedule:data.payload.schedule||[],staff:data.payload.staff||[],meta:data.payload.meta||{}};
+  ensureAudioState();
+  if(!data.payload&&['admin','dj'].includes(state.mode))await pushAudioState(false);
+  return !!data.payload;
+}
+async function pushAudioState(showMessage=true){
+  ensureAudioState();
+  const r=await fetch('/api/audio-state',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({payload:state.audioState})});
+  if(!r.ok){const x=await r.json().catch(()=>({}));throw new Error(x.error||'音控雲端儲存失敗 ('+r.status+')')}
+  if(showMessage)alert('音控排程已同步至 Railway PostgreSQL');
+}
+function bindAudioControls(){
+  $('djBackBtn').onclick=()=>showCalendarWorkspace();
+  $('djPrevBtn').onclick=()=>{state.audioMonth=new Date(state.audioMonth.getFullYear(),state.audioMonth.getMonth()-1,1);renderAudioSheet()};
+  $('djNextBtn').onclick=()=>{state.audioMonth=new Date(state.audioMonth.getFullYear(),state.audioMonth.getMonth()+1,1);renderAudioSheet()};
+  $('djMonthPicker').onchange=e=>{if(e.target.value){const [y,m]=e.target.value.split('-').map(Number);state.audioMonth=new Date(y,m-1,1);renderAudioSheet()}};
+  $('djAddBtn').onclick=()=>openAudioEditor();$('djPeopleBtn').onclick=showAudioPeople;$('djLayoutBtn').onclick=showAudioLayout;
+  $('djExportBtn').onclick=exportAudioPNG;$('djShareBtn').onclick=shareAudioPNG;
+}
+function showCalendarWorkspace(){
+  state.view='calendar';$('calendarWorkspace').classList.remove('hidden');$('djWorkspace').classList.add('hidden');
+  if(state.mode==='admin')$('sidebar').classList.remove('hidden');renderAll();
+}
+async function openAudioWorkspace(sync=true){
+  state.view='audio';$('calendarWorkspace').classList.add('hidden');$('djWorkspace').classList.remove('hidden');
+  if(sync){try{await pullAudioState()}catch(e){alert(e.message)}}
+  renderAudioSheet();
+}
+function audioTitle(){const m=state.audioState.meta,y=state.audioMonth.getFullYear(),mo=state.audioMonth.getMonth()+1;return (m.titleTemplate||'{Y}年{M}月份音控擔任表').replaceAll('{Y}',y).replaceAll('{M}',mo)}
+function audioPerson(id){return state.audioState.staff.find(x=>x.id===id)}
+function audioEntries(date,region=null){return state.audioState.schedule.filter(x=>x.date===date&&(region===null||x.region===region))}
+function audioCellStyle(e){return `font-size:${+e.size||16}px;color:${esc(e.color||'#111111')};text-align:${e.align||'center'};font-weight:${e.bold?'800':'400'};font-style:${e.italic?'italic':'normal'};text-decoration:${e.underline?'underline':'none'}`}
+function renderAudioEntry(e,prefixRegion=false){const person=audioPerson(e.personId);const text=e.text||person?.name||'';const label=prefixRegion&&e.region&&e.region!=='全區'?`${e.region}-${text}`:text;return `<div class="dj-entry ${e.kind==='special'?'special':''}" data-audio-id="${esc(e.id)}" style="${audioCellStyle(e)}">${esc(label)}</div>`}
+function djCell(date,region,html=''){const editable=['admin','dj'].includes(state.mode);return `<td class="dj-cell ${editable?'editable':''}" data-date="${esc(date||'')}" data-region="${esc(region||'')}">${html}</td>`}
+function renderAudioSheet(){
+  ensureAudioState();const y=state.audioMonth.getFullYear(),m=state.audioMonth.getMonth(),meta=state.audioState.meta;
+  $('djMonthPicker').value=monthKey(state.audioMonth);$('djTitle').textContent=audioTitle();$('djTitle').style.color=meta.titleColor||'#16831f';
+  const logo=meta.logo||state.meta.logo;if(logo){$('djLogoImg').src=logo;$('djLogoImg').classList.remove('hidden');$('djLogoFallback').classList.add('hidden')}else{$('djLogoImg').classList.add('hidden');$('djLogoFallback').classList.remove('hidden')}
+  const labels=meta.weekdayLabels||['星期一','星期二','星期三','星期四','星期五','星期六','星期日'];
+  const spans=[2,2,2,1,2,1,1];let html=`<table class="dj-calendar-table" style="--dj-grid:${esc(meta.gridColor||'#111111')};--dj-week-bg:${esc(meta.weekdayBg||'#eef1df')};--dj-week-text:${esc(meta.weekdayText||'#176aa1')};--dj-weekend:${esc(meta.weekendText||'#c71920')};--dj-date-bg:${esc(meta.dateBg||'#e7e4f3')};--dj-audio-bg:${esc(meta.audioBg||'#fae8dc')}"><thead><tr><th></th>`;
+  labels.forEach((x,i)=>html+=`<th colspan="${spans[i]}" class="${i>=5?'weekend-head':''}">${esc(x)}</th>`);html+='</tr><tr><th>'+esc(meta.branchLabel)+'</th>';
+  DJ_REGIONS.forEach(r=>html+=`<th>${esc(r)}</th>`);html+=`<th colspan="2" class="feedback-head">${esc(meta.feedbackLabel)}</th></tr></thead><tbody>`;
+  const first=new Date(y,m,1),monday=(first.getDay()+6)%7,weeks=Math.ceil((monday+new Date(y,m+1,0).getDate())/7);let cursor=1-monday;
+  for(let w=0;w<weeks;w++){
+    html+=`<tr class="dj-date-row"><th>${esc(meta.dateLabel)}</th>`;
+    for(let di=0;di<7;di++){
+      const day=cursor+di,dt=new Date(y,m,day),inMonth=dt.getMonth()===m,date=inMonth?ymd(dt):'';
+      html+=`<td colspan="${spans[di]}" class="${di>=5?'weekend-date':''}">${inMonth?`${m+1}/${day}`:''}</td>`;
+    }
+    html+='</tr><tr class="dj-audio-row"><th>'+esc(meta.audioLabel)+'</th>';
+    for(let di=0;di<7;di++){
+      const day=cursor+di,dt=new Date(y,m,day),inMonth=dt.getMonth()===m,date=inMonth?ymd(dt):'';
+      if(!inMonth){html+=`<td colspan="${spans[di]}"></td>`;continue}
+      const specials=audioEntries(date,null).filter(e=>e.kind==='special');
+      if(specials.length){html+=`<td colspan="${spans[di]}" class="dj-cell editable" data-date="${date}" data-region="全區">${specials.map(e=>renderAudioEntry(e,false)).join('')}</td>`;continue}
+      if(di<5){
+        const regions=DJ_WEEKDAY_REGIONS[di+1]||[];regions.forEach(r=>{const es=audioEntries(date,r);html+=djCell(date,r,es.map(e=>renderAudioEntry(e,false)).join(''))});
+      }else{
+        const es=audioEntries(date,null).filter(e=>e.kind!=='special');html+=djCell(date,'',es.map(e=>renderAudioEntry(e,true)).join(''));
+      }
+    }
+    html+='</tr><tr class="dj-gap-row"><td colspan="12"></td></tr>';cursor+=7;
+  }
+  html+='</tbody></table>';$('djTableWrap').innerHTML=html;
+  document.querySelectorAll('#djTableWrap .dj-entry[data-audio-id]').forEach(el=>el.onclick=e=>{e.stopPropagation();if(['admin','dj'].includes(state.mode))openAudioEditor(el.dataset.audioId)});
+  document.querySelectorAll('#djTableWrap .dj-cell.editable').forEach(el=>el.onclick=()=>{if(!['admin','dj'].includes(state.mode))return;openAudioEditor(null,el.dataset.date,el.dataset.region)});
+  renderAudioWarnings();
+}
+function hostForAudio(date,region){
+  const sourceEvents=state.mode==='admin'&&Array.isArray(state.events)?state.events:(state.audioContext.events||[]);
+  const sourceHosts=state.mode==='admin'&&state.staff?.hosts?.length?state.staff.hosts:(state.audioContext.hosts||[]);
+  const evs=sourceEvents.filter(e=>e.date===date&&(!region||region==='全區'||e.region===region));
+  return evs.map(e=>{const h=sourceHosts.find(x=>x.id===e.hostId);return {event:e,host:h}}).filter(x=>x.host);
+}
+function audioConflict(entry){const p=audioPerson(entry.personId);if(!p)return null;const hits=hostForAudio(entry.date,entry.region).filter(x=>x.host.name===p.name);return hits[0]||null}
+function renderAudioWarnings(){
+  const conflicts=state.audioState.schedule.filter(e=>e.kind!=='special').map(e=>({e,c:audioConflict(e)})).filter(x=>x.c);
+  $('djWarningBar').innerHTML=conflicts.length?`⚠ 發現 ${conflicts.length} 筆音控與主持人同人衝突：${conflicts.slice(0,4).map(x=>`${x.e.date} ${x.e.region} ${audioPerson(x.e.personId)?.name||x.e.text}`).join('、')}${conflicts.length>4?'…':''}`:'✅ 音控排程檢查正常：未發現音控與主持人同一人。';
+  $('djWarningBar').classList.toggle('has-warning',!!conflicts.length);
+}
+function audioOptions(selected=''){return `<option value="">— 特殊事項 / 手動文字 —</option>`+state.audioState.staff.map(p=>`<option value="${esc(p.id)}" ${p.id===selected?'selected':''}>${esc(p.name)}${p.regions?.length?'（'+esc(p.regions.join('、'))+'）':''}</option>`).join('')}
+function openAudioEditor(id=null,date='',region=''){
+  ensureAudioState();const e=id?state.audioState.schedule.find(x=>x.id===id):null;const obj=e?clone(e):{id:'',date:date||ymd(state.audioMonth),region:region||'',personId:'',text:'',size:16,color:'#111111',align:'center',bold:false,italic:false,underline:false,note:'',kind:'audio'};
+  openModal(e?'編輯音控排程':'新增音控排程',`<div class="form-grid"><label class="field"><span>日期</span><input id="djEDate" type="date" value="${esc(obj.date)}"></label><label class="field"><span>地區</span><select id="djERegion"><option value="">—</option><option value="全區" ${obj.region==='全區'?'selected':''}>全區 / 特殊事項</option>${DJ_REGIONS.map(r=>`<option ${r===obj.region?'selected':''}>${r}</option>`).join('')}</select></label><label class="field"><span>音控人員</span><select id="djEPerson">${audioOptions(obj.personId)}</select></label><label class="field"><span>類型</span><select id="djEKind"><option value="audio" ${obj.kind!=='special'?'selected':''}>音控排程</option><option value="special" ${obj.kind==='special'?'selected':''}>特殊事項/假日/旅遊</option></select></label><label class="field span2"><span>顯示文字（可手動修改）</span><input id="djEText" value="${esc(obj.text||'')}"></label><label class="field"><span>字體大小</span><input id="djESize" type="number" min="9" max="40" value="${+obj.size||16}"></label><label class="field"><span>文字顏色</span><input id="djEColor" type="color" value="${esc(obj.color||'#111111')}"></label><label class="field"><span>對齊</span><select id="djEAlign"><option value="left" ${obj.align==='left'?'selected':''}>靠左</option><option value="center" ${obj.align==='center'?'selected':''}>置中</option><option value="right" ${obj.align==='right'?'selected':''}>靠右</option></select></label><div class="field"><span>文字樣式</span><div class="toolbar-row"><button type="button" id="djEBold" class="mini toggle ${obj.bold?'active':''}"><b>B</b></button><button type="button" id="djEItalic" class="mini toggle ${obj.italic?'active':''}"><i>I</i></button><button type="button" id="djEUnderline" class="mini toggle ${obj.underline?'active':''}"><u>U</u></button></div></div><label class="field span2"><span>附註</span><textarea id="djENote">${esc(obj.note||'')}</textarea></label><div id="djEConflict" class="span2"></div></div>`,`${e?'<button id="djEDelete" class="danger primary">刪除</button>':''}<button id="djECancel" class="secondary">取消</button><button id="djESave" class="dj-primary">儲存並上傳</button>`);
+  ['djEBold','djEItalic','djEUnderline'].forEach(k=>$(k).onclick=()=>$(k).classList.toggle('active'));
+  $('djEPerson').onchange=()=>{const p=audioPerson($('djEPerson').value);if(p&&!$('djEText').value.trim())$('djEText').value=p.name;previewAudioConflict()};$('djEDate').onchange=previewAudioConflict;$('djERegion').onchange=previewAudioConflict;
+  $('djECancel').onclick=closeModal;$('djESave').onclick=()=>saveAudioEntry(obj.id);if(e)$('djEDelete').onclick=async()=>{if(confirm('確定刪除此音控排程？')){state.audioState.schedule=state.audioState.schedule.filter(x=>x.id!==e.id);await pushAudioState(false);closeModal();renderAudioSheet()}};previewAudioConflict();
+}
+function previewAudioConflict(){const p=audioPerson($('djEPerson')?.value);if(!p||!$('djEConflict'))return $('djEConflict')&&($('djEConflict').innerHTML='');const tmp={date:$('djEDate').value,region:$('djERegion').value,personId:p.id};const c=audioConflict(tmp);$('djEConflict').innerHTML=c?`<div class="warning-item severe"><b>禁止排定</b>：${esc(p.name)} 在 ${esc(tmp.date)} ${esc(tmp.region)} 已是主持人，音控不可與主持人為同一人。</div>`:'<div class="panel-note">✅ 未偵測到與主持人同人衝突。</div>'}
+async function saveAudioEntry(id){
+  const personId=$('djEPerson').value,kind=$('djEKind').value;const obj={id:id||uid('dj'),date:$('djEDate').value,region:$('djERegion').value,personId:kind==='special'?'':personId,text:$('djEText').value.trim(),size:+$('djESize').value||16,color:$('djEColor').value,align:$('djEAlign').value,bold:$('djEBold').classList.contains('active'),italic:$('djEItalic').classList.contains('active'),underline:$('djEUnderline').classList.contains('active'),note:$('djENote').value,kind};
+  if(!obj.date)return alert('請選擇日期');if(kind!=='special'&&!obj.region)return alert('請選擇地區');if(kind!=='special'&&!obj.personId)return alert('請選擇音控人員');if(!obj.text){const p=audioPerson(obj.personId);obj.text=p?.name||''}if(kind!=='special'&&audioConflict(obj))return alert('此音控人員當日同區已擔任主持人，依規則不可排為音控。');
+  const idx=state.audioState.schedule.findIndex(x=>x.id===obj.id);if(idx>=0)state.audioState.schedule[idx]=obj;else state.audioState.schedule.push(obj);await pushAudioState(false);closeModal();renderAudioSheet();
+}
+function showAudioPeople(){
+  ensureAudioState();let filter='全部';const draw=()=>{const list=filter==='全部'?state.audioState.staff:state.audioState.staff.filter(p=>p.regions?.includes(filter));$('modalBody').innerHTML=`<div class="toolbar-row"><label class="field"><span>地區篩選</span><select id="djPFilter"><option>全部</option>${DJ_REGIONS.map(r=>`<option ${r===filter?'selected':''}>${r}</option>`).join('')}</select></label><button id="djPAdd" class="dj-primary">＋ 新增音控人員</button></div><table class="staff-table"><thead><tr><th>姓名</th><th>地區（可多區，以逗號分隔）</th><th>備註</th><th></th></tr></thead><tbody>${list.map(p=>`<tr data-id="${esc(p.id)}"><td><input class="djp-name" value="${esc(p.name)}"></td><td><input class="djp-regions" value="${esc((p.regions||[]).join('、'))}"></td><td><input class="djp-note" value="${esc(p.note||'')}"></td><td><button class="danger mini djp-del">刪</button></td></tr>`).join('')}</tbody></table>`;$('djPFilter').onchange=e=>{saveVisible();filter=e.target.value;draw()};$('djPAdd').onclick=()=>{saveVisible();state.audioState.staff.push({id:uid('djp'),name:'新音控',regions:filter==='全部'?[]:[filter],note:''});draw()};document.querySelectorAll('.djp-del').forEach(b=>b.onclick=()=>{state.audioState.staff=state.audioState.staff.filter(x=>x.id!==b.closest('tr').dataset.id);draw()})};const saveVisible=()=>{document.querySelectorAll('#modalBody tbody tr').forEach(tr=>{const p=state.audioState.staff.find(x=>x.id===tr.dataset.id);if(!p)return;p.name=tr.querySelector('.djp-name').value.trim();p.regions=tr.querySelector('.djp-regions').value.split(/[、,，]/).map(x=>x.trim()).filter(Boolean);p.note=tr.querySelector('.djp-note').value})};openModal('音控名單管理','',`<button id="djPCancel" class="secondary">取消</button><button id="djPSave" class="dj-primary">儲存並上傳</button>`);draw();$('djPCancel').onclick=closeModal;$('djPSave').onclick=async()=>{saveVisible();await pushAudioState(false);closeModal();renderAudioSheet()}
+}
+function showAudioLayout(){const m=state.audioState.meta;openModal('音控表版面設定',`<div class="form-grid"><label class="field span2"><span>大標題格式</span><input id="djlTitle" value="${esc(m.titleTemplate)}"><small>可使用 {Y}、{M}</small></label><label class="field"><span>分公司欄文字</span><input id="djlBranch" value="${esc(m.branchLabel)}"></label><label class="field"><span>日期欄文字</span><input id="djlDate" value="${esc(m.dateLabel)}"></label><label class="field"><span>音控欄文字</span><input id="djlAudio" value="${esc(m.audioLabel)}"></label><label class="field"><span>回饋日欄文字</span><input id="djlFeedback" value="${esc(m.feedbackLabel)}"></label><label class="field span2"><span>星期文字（逗號分隔 7 個）</span><input id="djlWeekdays" value="${esc((m.weekdayLabels||['星期一','星期二','星期三','星期四','星期五','星期六','星期日']).join('、'))}"></label><label class="field"><span>標題顏色</span><input id="djlTitleColor" type="color" value="${esc(m.titleColor)}"></label><label class="field"><span>星期背景</span><input id="djlWeekBg" type="color" value="${esc(m.weekdayBg)}"></label><label class="field"><span>星期文字</span><input id="djlWeekText" type="color" value="${esc(m.weekdayText)}"></label><label class="field"><span>週末文字</span><input id="djlWeekend" type="color" value="${esc(m.weekendText)}"></label><label class="field"><span>日期背景</span><input id="djlDateBg" type="color" value="${esc(m.dateBg)}"></label><label class="field"><span>音控背景</span><input id="djlAudioBg" type="color" value="${esc(m.audioBg)}"></label><label class="field"><span>格線顏色</span><input id="djlGrid" type="color" value="${esc(m.gridColor)}"></label><div class="span2 toolbar-row"><button id="djlLogo" class="secondary">使用目前行事曆 Logo</button></div></div>`,`<button id="djlCancel" class="secondary">取消</button><button id="djlSave" class="dj-primary">儲存並上傳</button>`);$('djlCancel').onclick=closeModal;$('djlLogo').onclick=()=>{m.logo=state.meta.logo||'';alert('已套用目前行事曆 Logo，按儲存後上傳。')};$('djlSave').onclick=async()=>{m.titleTemplate=$('djlTitle').value;m.branchLabel=$('djlBranch').value;m.dateLabel=$('djlDate').value;m.audioLabel=$('djlAudio').value;m.feedbackLabel=$('djlFeedback').value;m.weekdayLabels=$('djlWeekdays').value.split(/[、,，]/).map(x=>x.trim()).filter(Boolean).slice(0,7);m.titleColor=$('djlTitleColor').value;m.weekdayBg=$('djlWeekBg').value;m.weekdayText=$('djlWeekText').value;m.weekendText=$('djlWeekend').value;m.dateBg=$('djlDateBg').value;m.audioBg=$('djlAudioBg').value;m.gridColor=$('djlGrid').value;await pushAudioState(false);closeModal();renderAudioSheet()}}
+async function makeAudioCanvas(){document.body.classList.add('exporting-audio');await new Promise(r=>setTimeout(r,80));const sheet=$('djSheet');const canvas=await html2canvas(sheet,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,width:sheet.scrollWidth,height:sheet.scrollHeight});document.body.classList.remove('exporting-audio');return canvas}
+async function exportAudioPNG(){try{const canvas=await makeAudioCanvas(),a=document.createElement('a');a.download=`FEATERA_${audioTitle()}.png`;a.href=canvas.toDataURL('image/png');a.click()}catch(e){document.body.classList.remove('exporting-audio');alert('音控表匯出失敗：'+e.message)}}
+async function shareAudioPNG(){try{const canvas=await makeAudioCanvas(),blob=await new Promise(r=>canvas.toBlob(r,'image/png')),file=new File([blob],`FEATERA_${audioTitle()}.png`,{type:'image/png'});if(navigator.canShare?.({files:[file]})){await navigator.share({title:audioTitle(),text:'FEATERA 音控擔任表',files:[file]})}else{const a=document.createElement('a');a.download=file.name;a.href=URL.createObjectURL(blob);a.click();alert('此瀏覽器不支援直接分享，已改為下載 PNG，可再透過通訊軟體或 Email 傳送。')}}catch(e){document.body.classList.remove('exporting-audio');if(e.name!=='AbortError')alert('分享失敗：'+e.message)}}
 
 initialize().catch(e=>{console.error(e);alert('系統初始化失敗：'+e.message)});

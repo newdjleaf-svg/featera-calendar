@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=8.0.0" />
+  <link rel="stylesheet" href="style.css?v=9.0.0" />
 </head>
 <body>
   <section id="loginView" class="login-view">
@@ -22,6 +22,12 @@
         <button class="primary" type="submit">管理員登入</button>
       </form>
       <button id="guestLoginBtn" class="secondary full">訪客登入</button>
+      <div class="login-divider"><span>音控專區</span></div>
+      <form id="djLoginForm" class="login-form dj-login-form">
+        <label>音控帳號<input id="djLoginUser" value="featera_dj" autocomplete="username"></label>
+        <label>音控密碼<input id="djLoginPass" type="password" value="featera168" autocomplete="current-password"></label>
+        <button class="dj-primary" type="submit">🎧 音控排程登入</button>
+      </form>
       <div id="loginError" class="error-text"></div>
       <div class="login-note">管理員帳號由 Railway 安全設定；訪客可直接登入瀏覽</div>
     </div>
@@ -60,7 +66,8 @@
       </div>
       <div class="side-section admin-only">
         <div class="side-title">資料維護</div>
-        <button id="staffBtn" class="secondary full">講師 / 主持 / 音控</button>
+        <button id="staffBtn" class="secondary full">講師 / 主持</button>
+        <button id="audioBtn" class="secondary full">🎧 音控排程 / 名單</button>
         <button id="layoutBtn" class="secondary full">標題 / Logo / 聯絡資訊</button>
         <button id="appearanceBtn" class="secondary full">🎨 星期 / 日期配色</button>
         <button id="settingsBtn" class="secondary full">系統設定</button>
@@ -72,7 +79,7 @@
       </div>
     </aside>
 
-    <main class="workspace">
+    <main id="calendarWorkspace" class="workspace">
       <section id="sheet" class="calendar-sheet">
         <div class="sheet-head">
           <div id="logoBox" class="logo-box" title="管理員可於版面設定上傳 Logo">
@@ -93,6 +100,37 @@
         <div class="contacts-grid" id="contactsGrid"></div>
       </section>
     </main>
+
+    <main id="djWorkspace" class="workspace dj-workspace hidden">
+      <section class="dj-console no-export">
+        <div class="dj-toolbar">
+          <div>
+            <strong>🎧 音控排程專區</strong>
+            <span class="panel-note-inline">獨立名單・分區排程・主持人衝突檢查</span>
+          </div>
+          <div class="toolbar-row">
+            <button id="djBackBtn" class="secondary admin-only">← 回行事曆</button>
+            <button id="djPrevBtn" class="secondary">‹ 上月</button>
+            <input id="djMonthPicker" type="month">
+            <button id="djNextBtn" class="secondary">下月 ›</button>
+            <button id="djAddBtn" class="dj-primary dj-editor-only">＋ 新增音控安排</button>
+            <button id="djPeopleBtn" class="secondary dj-editor-only">音控名單</button>
+            <button id="djLayoutBtn" class="secondary dj-editor-only">版面設定</button>
+            <button id="djExportBtn" class="primary">匯出 PNG</button>
+            <button id="djShareBtn" class="secondary">分享</button>
+          </div>
+        </div>
+        <div id="djWarningBar" class="dj-warning-bar"></div>
+      </section>
+      <section id="djSheet" class="dj-sheet">
+        <div class="dj-sheet-head">
+          <div class="dj-logo-wrap"><img id="djLogoImg" class="hidden" alt="FEATERA Logo"><div id="djLogoFallback" class="brand-mark large">FEAT<span>ERA</span></div></div>
+          <div id="djTitle" class="dj-title">2026年9月份音控擔任表</div>
+          <div></div>
+        </div>
+        <div id="djTableWrap" class="dj-table-wrap"></div>
+      </section>
+    </main>
   </div>
 
   <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
@@ -108,6 +146,6 @@
   <input id="logoUpload" type="file" accept="image/*" class="hidden" />
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   
-  <script src="app.js?v=8.0.0"></script>
+  <script src="app.js?v=9.0.0"></script>
 </body>
 </html>
