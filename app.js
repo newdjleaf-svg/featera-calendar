@@ -236,7 +236,7 @@ function renderCalendar(){
   document.querySelectorAll('.event-block.clickable').forEach(el=>el.onclick=()=>state.mode==='admin'&&openEventEditor(el.dataset.id));
 }
 function renderEvent(e){
-  const lines=(e.lines||[]).map((l,idx)=>{const st=`font-size:${Number(l.size)||14}px;color:${esc(l.color||'#111')};text-align:${l.align||'left'};font-weight:${l.bold?'900':'400'};font-style:${l.italic?'italic':'normal'};text-decoration:${l.underline?'underline':'none'}`;return `<div class="calendar-line ${idx===0&&e.highlight?'region-line':''}" style="${st}">${esc(l.text)}</div>`}).join('');
+  const lines=(e.lines||[]).map((l,idx)=>{const size=Number(l.size)||14;const st=`font-size:${size}px;line-height:1.25;min-height:${Math.max(size*1.25,12)}px;color:${esc(l.color||'#111')};text-align:${l.align||'left'};font-weight:${l.bold?'900':'400'};font-style:${l.italic?'italic':'normal'};text-decoration:${l.underline?'underline':'none'}`;const txt=String(l.text??'');return `<div class="calendar-line ${idx===0&&e.highlight?'region-line':''} ${txt.trim()?'':'blank-calendar-line'}" style="${st}">${txt.trim()?esc(txt):'&nbsp;'}</div>`}).join('');
   const c=e.headcount?`<span class="count-badge">${esc(e.headcount)}人</span>`:'';
   return `<div class="event-block ${state.mode==='admin'&&!e.systemHoliday?'clickable':''} ${e.systemHoliday?'system-holiday':''}" ${e.systemHoliday?'':`data-id="${esc(e.id)}"`}>${lines}${c}</div>`
 }
@@ -245,37 +245,96 @@ function renderContacts(){$('contactsGrid').innerHTML=state.contacts.map(c=>`<di
 function openModal(title,body,foot=''){$('modalTitle').textContent=title;$('modalBody').innerHTML=body;$('modalFoot').innerHTML=foot;$('modal').classList.remove('hidden')}
 function closeModal(){$('modal').classList.add('hidden')}
 function personOptions(list,selected=''){return `<option value="">— 未指定 —</option>`+list.map(p=>`<option value="${esc(p.id)}" ${p.id===selected?'selected':''}>${esc(p.name)} ${p.rank?`(${esc(p.rank)})`:''}${p.stars?` ${'★'.repeat(p.stars)}`:''}</option>`).join('')}
-function defaultLines(){return [{text:'台北',size:16,color:'#111111',align:'left',bold:true,italic:false,underline:false},{text:'主持：',size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false},{text:'講師：',size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false}]}
-function lineEditorHtml(lines){return lines.map((l,i)=>lineRow(l,i)).join('')}
+function personName(list,id){return list.find(p=>p.id===id)?.name||''}
+function personByName(list,name){const n=String(name||'').trim();return list.find(p=>String(p.name||'').trim()===n)||null}
+function ensurePersonFromInput(kind,name){
+  const n=String(name||'').trim();if(!n)return null;
+  const list=kind==='lecturer'?state.staff.lecturers:state.staff.hosts;
+  let p=personByName(list,n);if(p)return p;
+  p={id:uid(kind==='lecturer'?'l':'h'),name:n,note:'手動於行程新增'};
+  if(kind==='lecturer')Object.assign(p,{stars:1,rank:'',special:false});else Object.assign(p,{rank:'SM',stars:0});
+  list.push(p);return p;
+}
+function datalistHtml(id,items){const vals=[...new Set(items.map(x=>String(x||'').trim()).filter(Boolean))];return `<datalist id="${id}">${vals.map(x=>`<option value="${esc(x)}"></option>`).join('')}</datalist>`}
+function courseSuggestionNames(){return [...COURSE_TYPES,...(state.reference.courseCatalog||[]).flatMap(c=>[c.name,c.category]),...(state.reference.courseNameUpdates||[]).flatMap(x=>[x.oldName,x.newName])].filter(Boolean)}
+function defaultLines(){return []}
+function lineEditorHtml(lines){return (lines||[]).map((l,i)=>lineRow(l,i)).join('')}
 function lineRow(l,i){return `<div class="line-editor" data-line="${i}"><div class="line-toolbar">
-<input class="mini line-text" type="text" value="${esc(l.text)}" placeholder="輸入文字">
-<input class="mini line-size" type="number" min="8" max="36" value="${Number(l.size)||14}" title="字體大小">
-<input class="mini line-color" type="color" value="${esc(l.color||'#111111')}" title="顏色">
+<input class="mini line-text" type="text" value="${esc(l.text||'')}" placeholder="輸入文字（完全可手動修改）">
+<input class="mini line-size" type="number" min="8" max="48" value="${Number(l.size)||14}" title="字體大小">
+<input class="mini line-color" type="color" value="${esc(l.color||'#111111')}" title="文字顏色">
 <select class="mini line-align"><option value="left" ${l.align==='left'?'selected':''}>靠左</option><option value="center" ${l.align==='center'?'selected':''}>置中</option><option value="right" ${l.align==='right'?'selected':''}>靠右</option></select>
 <button type="button" class="mini style-btn toggle line-bold ${l.bold?'active':''}" title="粗體"><b>B</b></button>
 <button type="button" class="mini style-btn toggle line-italic ${l.italic?'active':''}" title="斜體"><i>I</i></button>
 <button type="button" class="mini style-btn toggle line-underline ${l.underline?'active':''}" title="底線"><u>U</u></button>
+<button type="button" class="mini move-line-up" title="上移">▲</button><button type="button" class="mini move-line-down" title="下移">▼</button>
 <button type="button" class="mini danger remove-line">刪</button></div></div>`}
-function openEventEditor(id,date){
-  const e=id?state.events.find(x=>x.id===id):null; const obj=e?clone(e):{id:'',date:date||ymd(state.month),type:'系統培訓',region:'',lecturerId:'',hostId:'',audioId:'',headcount:'',note:'',highlight:true,lines:defaultLines()};
-  openModal(e?'編輯行程':'新增行程',`<div class="form-grid">
-    <label class="field"><span>日期</span><input id="evDate" type="date" value="${esc(obj.date)}"></label>
-    <label class="field"><span>課程類型</span><select id="evType">${COURSE_TYPES.map(x=>`<option ${x===obj.type?'selected':''}>${x}</option>`).join('')}</select></label>
-    <label class="field"><span>區域</span><select id="evRegion"><option value="">—</option>${REGIONS.map(x=>`<option ${x===obj.region?'selected':''}>${x}</option>`).join('')}</select></label>
-    <label class="field"><span>統計人數</span><input id="evCount" type="number" min="0" value="${esc(obj.headcount||'')}"></label>
-    <label class="field"><span>講師</span><select id="evLecturer">${personOptions(state.staff.lecturers,obj.lecturerId)}</select></label>
-    <label class="field"><span>主持人</span><select id="evHost">${personOptions(state.staff.hosts,obj.hostId)}</select></label>
-    <label class="field"><span>第一行樣式</span><select id="evHighlight"><option value="1" ${obj.highlight?'selected':''}>標準</option><option value="0" ${!obj.highlight?'selected':''}>標準</option></select></label>
-    <label class="field span2"><span>附註事項</span><textarea id="evNote">${esc(obj.note||'')}</textarea></label>
-    <div class="span2"><div class="toolbar-row"><b>顯示文字（每行可獨立格式）</b><button id="addLineBtn" type="button" class="secondary">＋新增一行</button><button id="autoFillBtn" type="button" class="secondary">依人員自動帶入</button><button id="smartSuggestBtn" type="button" class="primary">✨ 智慧推薦人員</button></div><div id="smartSuggestBox" class="smart-suggest-box"></div><div id="lineEditors">${lineEditorHtml(obj.lines||[])}</div></div>
-  </div>`,`${e?'<button id="deleteEventBtn" class="danger primary">刪除</button>':''}<button id="cancelModalBtn" class="secondary">取消</button><button id="saveEventBtn" class="primary">儲存</button>`);
-  wireLineEditors();$('addLineBtn').onclick=()=>{$('lineEditors').insertAdjacentHTML('beforeend',lineRow({text:'',size:14,color:'#111111',align:'left'},document.querySelectorAll('.line-editor').length));wireLineEditors()};
-  $('autoFillBtn').onclick=()=>autofillEventLines();$('smartSuggestBtn').onclick=()=>smartSuggestForEditor();$('cancelModalBtn').onclick=closeModal;$('saveEventBtn').onclick=()=>saveEvent(obj.id);if(e)$('deleteEventBtn').onclick=()=>{if(confirm('確定刪除此行程？')){state.events=state.events.filter(x=>x.id!==e.id);saveLocal();closeModal();renderAll()}};
+function appendDisplayLine(line){
+  if(!line||!String(line.text||'').trim())return;
+  const count=document.querySelectorAll('#lineEditors .line-editor').length;
+  $('lineEditors').insertAdjacentHTML('beforeend',lineRow(line,count));wireLineEditors();
 }
-function wireLineEditors(){document.querySelectorAll('.line-editor').forEach(row=>{row.querySelectorAll('.toggle').forEach(btn=>btn.onclick=()=>btn.classList.toggle('active'));row.querySelector('.remove-line').onclick=()=>row.remove()})}
-function collectLines(){return [...document.querySelectorAll('.line-editor')].map(row=>({text:row.querySelector('.line-text').value,size:+row.querySelector('.line-size').value||14,color:row.querySelector('.line-color').value,align:row.querySelector('.line-align').value,bold:row.querySelector('.line-bold').classList.contains('active'),italic:row.querySelector('.line-italic').classList.contains('active'),underline:row.querySelector('.line-underline').classList.contains('active')})).filter(x=>x.text.trim())}
-function autofillEventLines(){const region=$('evRegion').value,lec=state.staff.lecturers.find(x=>x.id===$('evLecturer').value),host=state.staff.hosts.find(x=>x.id===$('evHost').value);const lines=[];if(region)lines.push({text:region,size:16,color:'#111111',align:'left',bold:true});if(host)lines.push({text:`主持：${host.name} ${host.rank||''}`.trim(),size:13,color:'#555555',align:'left'});if(lec)lines.push({text:`講師：${lec.name}${lec.stars?' '+['','一星','二星','三星'][lec.stars]+'講師':''}`,size:13,color:'#555555',align:'left'});$('lineEditors').innerHTML=lineEditorHtml(lines);wireLineEditors()}
-function saveEvent(id){const existing=id?state.events.find(x=>x.id===id):null;const obj={id:id||uid(),date:$('evDate').value,type:$('evType').value,region:$('evRegion').value,lecturerId:$('evLecturer').value,hostId:$('evHost').value,audioId:existing?.audioId||'',headcount:$('evCount').value,note:$('evNote').value,highlight:$('evHighlight').value==='1',lines:collectLines(),order:0};if(!obj.date)return alert('請選擇日期');const idx=state.events.findIndex(x=>x.id===obj.id);if(idx>=0)state.events[idx]=obj;else state.events.push(obj);saveLocal();closeModal();renderAll()}
+function generatedEventLines(){
+  const type=$('evType').value.trim(),course=$('evCourseName').value.trim(),region=$('evRegion').value.trim();
+  const lec=personByName(state.staff.lecturers,$('evLecturerName').value),host=personByName(state.staff.hosts,$('evHostName').value);
+  const head=$('evCount').value;
+  const lines=[];
+  const first=[region,course||type].filter(Boolean).join('-');
+  if(first)lines.push({text:first,size:16,color:'#111111',align:'left',bold:true,italic:false,underline:false});
+  if(host)lines.push({text:`主持：${host.name}${host.rank?' '+host.rank:''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
+  else if($('evHostName').value.trim())lines.push({text:`主持：${$('evHostName').value.trim()}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
+  if(lec)lines.push({text:`講師：${lec.name}${lec.stars?' '+['','一星','二星','三星'][lec.stars]+'講師':''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
+  else if($('evLecturerName').value.trim())lines.push({text:`講師：${$('evLecturerName').value.trim()}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
+  if(head)lines.push({text:`統計人數：${head}人`,size:12,color:'#555555',align:'left',bold:false,italic:false,underline:false});
+  return lines;
+}
+function openEventEditor(id,date){
+  const e=id?state.events.find(x=>x.id===id):null;
+  const obj=e?clone(e):{id:'',date:date||ymd(state.month),type:'系統培訓',courseName:'',region:'',lecturerId:'',hostId:'',audioId:'',headcount:'',note:'',highlight:false,lines:defaultLines()};
+  const lecName=personName(state.staff.lecturers,obj.lecturerId),hostName=personName(state.staff.hosts,obj.hostId);
+  const knownCourse=obj.courseName||'';
+  openModal(e?'編輯行程':'新增行程',`<div class="event-assist-note panel-note"><b>上方是「排程資料 / 快速帶入區」</b>：可從既有資料選擇，也可直接輸入新內容；不會鎖定下方顯示文字。按「加入下方」後，每一行仍可獨立修改文字與格式。同一天可儲存多筆不同區域行程。</div>
+  <div class="form-grid event-assist-grid">
+    <label class="field"><span>日期</span><input id="evDate" type="date" value="${esc(obj.date)}"></label>
+    <label class="field"><span>課程類型（可選／可新增）</span><input id="evType" list="evTypeList" value="${esc(obj.type||'')}" placeholder="例如：系統培訓">${datalistHtml('evTypeList',COURSE_TYPES)}</label>
+    <label class="field"><span>課程 / 活動名稱（可選／可新增）</span><input id="evCourseName" list="evCourseList" value="${esc(knownCourse)}" placeholder="例如：產品 Q&A">${datalistHtml('evCourseList',courseSuggestionNames())}</label>
+    <label class="field"><span>區域（可選／可新增）</span><input id="evRegion" list="evRegionList" value="${esc(obj.region||'')}" placeholder="例如：宜蘭">${datalistHtml('evRegionList',REGIONS)}</label>
+    <label class="field"><span>統計人數</span><input id="evCount" type="number" min="0" value="${esc(obj.headcount||'')}" placeholder="可留空"></label>
+    <label class="field"><span>講師（可選／可新增）</span><input id="evLecturerName" list="evLecturerList" value="${esc(lecName)}" placeholder="輸入或選擇講師">${datalistHtml('evLecturerList',state.staff.lecturers.map(x=>x.name))}</label>
+    <label class="field"><span>主持人（可選／可新增）</span><input id="evHostName" list="evHostList" value="${esc(hostName)}" placeholder="輸入或選擇主持人">${datalistHtml('evHostList',state.staff.hosts.map(x=>x.name))}</label>
+    <label class="field"><span>首行底色提示</span><select id="evHighlight"><option value="0" ${!obj.highlight?'selected':''}>關閉</option><option value="1" ${obj.highlight?'selected':''}>開啟</option></select></label>
+    <label class="field span2"><span>附註事項（內部備註，不固定顯示）</span><textarea id="evNote">${esc(obj.note||'')}</textarea></label>
+    <div class="span2 transfer-panel"><div class="transfer-title"><b>↓ 將上方資料加入下方顯示文字</b><span>加入後可完全獨立修改，不會因上方欄位再次變更而被覆蓋。</span></div>
+      <div class="toolbar-row transfer-buttons"><button id="addCourseBtn" type="button" class="secondary">＋ 課程 / 區域</button><button id="addHostBtn" type="button" class="secondary">＋ 主持人</button><button id="addLecturerBtn" type="button" class="secondary">＋ 講師</button><button id="addCountBtn" type="button" class="secondary">＋ 統計人數</button><button id="autoFillBtn" type="button" class="primary">＋ 全部加入下方</button><button id="smartSuggestBtn" type="button" class="secondary">✨ 智慧推薦人員</button></div>
+      <div id="smartSuggestBox" class="smart-suggest-box"></div>
+    </div>
+    <div class="span2 display-lines-panel"><div class="toolbar-row"><b>實際顯示文字（每行獨立設定）</b><button id="addLineBtn" type="button" class="secondary">＋ 手動新增一行</button></div><div class="panel-note small-note">下方才是實際出現在月曆上的文字。每行可調整字體大小、顏色、靠左／置中／靠右、粗體、斜體、底線與順序。</div><div id="lineEditors">${lineEditorHtml(obj.lines||[])}</div></div>
+  </div>`,`${e?'<button id="deleteEventBtn" class="danger primary">刪除</button>':''}<button id="cancelModalBtn" class="secondary">取消</button><button id="saveAddSameDayBtn" class="secondary">儲存＋同日新增另一區</button><button id="saveEventBtn" class="primary">儲存</button>`);
+  wireLineEditors();
+  $('addLineBtn').onclick=()=>appendDisplayLine({text:'',size:14,color:'#111111',align:'left',bold:false,italic:false,underline:false});
+  $('addCourseBtn').onclick=()=>{const [x]=generatedEventLines();if(x)appendDisplayLine(x)};
+  $('addHostBtn').onclick=()=>{const x=generatedEventLines().find(x=>x.text.startsWith('主持：'));if(x)appendDisplayLine(x)};
+  $('addLecturerBtn').onclick=()=>{const x=generatedEventLines().find(x=>x.text.startsWith('講師：'));if(x)appendDisplayLine(x)};
+  $('addCountBtn').onclick=()=>{const x=generatedEventLines().find(x=>x.text.startsWith('統計人數：'));if(x)appendDisplayLine(x)};
+  $('autoFillBtn').onclick=()=>generatedEventLines().forEach(appendDisplayLine);
+  $('smartSuggestBtn').onclick=()=>smartSuggestForEditor();$('cancelModalBtn').onclick=closeModal;$('saveEventBtn').onclick=()=>saveEvent(obj.id,false);$('saveAddSameDayBtn').onclick=()=>saveEvent(obj.id,true);
+  if(e)$('deleteEventBtn').onclick=()=>{if(confirm('確定刪除此行程？')){state.events=state.events.filter(x=>x.id!==e.id);saveLocal();closeModal();renderAll()}};
+}
+function wireLineEditors(){document.querySelectorAll('.line-editor').forEach(row=>{
+  row.querySelectorAll('.toggle').forEach(btn=>btn.onclick=()=>btn.classList.toggle('active'));
+  row.querySelector('.remove-line').onclick=()=>row.remove();
+  row.querySelector('.move-line-up').onclick=()=>{const prev=row.previousElementSibling;if(prev)row.parentNode.insertBefore(row,prev)};
+  row.querySelector('.move-line-down').onclick=()=>{const next=row.nextElementSibling;if(next)row.parentNode.insertBefore(next,row)};
+})}
+function collectLines(){return [...document.querySelectorAll('#lineEditors .line-editor')].map(row=>({text:row.querySelector('.line-text').value,size:+row.querySelector('.line-size').value||14,color:row.querySelector('.line-color').value,align:row.querySelector('.line-align').value,bold:row.querySelector('.line-bold').classList.contains('active'),italic:row.querySelector('.line-italic').classList.contains('active'),underline:row.querySelector('.line-underline').classList.contains('active')}))}
+function autofillEventLines(){generatedEventLines().forEach(appendDisplayLine)}
+function saveEvent(id,addSameDay=false){
+  const existing=id?state.events.find(x=>x.id===id):null;
+  const lecturer=ensurePersonFromInput('lecturer',$('evLecturerName').value),host=ensurePersonFromInput('host',$('evHostName').value);
+  const obj={id:id||uid(),date:$('evDate').value,type:$('evType').value.trim(),courseName:$('evCourseName').value.trim(),region:$('evRegion').value.trim(),lecturerId:lecturer?.id||'',hostId:host?.id||'',audioId:existing?.audioId||'',headcount:$('evCount').value,note:$('evNote').value,highlight:$('evHighlight').value==='1',lines:collectLines(),order:existing?.order||0};
+  if(!obj.date)return alert('請選擇日期');if(!obj.lines.length&&!confirm('目前下方沒有顯示文字，仍要儲存這筆行程嗎？'))return;
+  const idx=state.events.findIndex(x=>x.id===obj.id);if(idx>=0)state.events[idx]=obj;else state.events.push(obj);saveLocal();closeModal();renderAll();if(addSameDay)setTimeout(()=>openEventEditor(null,obj.date),0)
+}
 
 function showValidation(){const warnings=validate3Months();openModal('三個月排程檢查',`<div class="panel-note">檢查範圍：${monthKey(state.month)} 起連續三個月。提示依「行事曆安排注意事項」整理，屬排程提醒，不會自動更改行程。</div><div class="warning-list">${warnings.length?warnings.map(w=>`<div class="warning-item ${w.severe?'severe':''}"><b>${esc(w.title)}</b><div>${esc(w.text)}</div></div>`).join(''):'<div class="panel-note">目前沒有偵測到異常排程。</div>'}</div>`,`<button id="okModal" class="primary">完成</button>`);$('okModal').onclick=closeModal}
 function validate3Months(){
@@ -397,11 +456,11 @@ function smartSuggestForEditor(){
   const lecturers=recommendPeople('lecturer',{date,region,type,courseText},5);
   const chosenLecturer=lecturers[0]?.person||null;
   const hosts=recommendPeople('host',{date,region,type,courseText,lecturer:chosenLecturer},5);
-  if(chosenLecturer)$('evLecturer').value=chosenLecturer.id;
-  if(hosts[0]?.person)$('evHost').value=hosts[0].person.id;
+  if(chosenLecturer)$('evLecturerName').value=chosenLecturer.name;
+  if(hosts[0]?.person)$('evHostName').value=hosts[0].person.name;
   const fmt=(x,role)=>`<div class="smart-candidate"><div><b>${esc(x.person.name)}</b> <span class="score-pill">${x.score} 分</span></div><div class="smart-reasons">${esc(x.reasons.slice(0,4).join('｜')||'符合一般輪替條件')}</div><button type="button" class="mini pick-candidate" data-role="${role}" data-id="${esc(x.person.id)}">選用</button></div>`;
   $('smartSuggestBox').innerHTML=`<div class="smart-title">✨ 智慧推薦（已先選最高分人選）</div><div class="smart-columns"><div><b>講師 TOP 5</b>${lecturers.map(x=>fmt(x,'lecturer')).join('')}</div><div><b>主持人 TOP 5</b>${hosts.map(x=>fmt(x,'host')).join('')}</div></div><div class="panel-note">評分依三個月輪替、相鄰日期、每月安排次數、說明會資格、支援區域、課程推薦名單，以及主持/主講聘級與星級關係計算。此為排程輔助，仍由管理員最後確認。</div>`;
-  document.querySelectorAll('.pick-candidate').forEach(b=>b.onclick=()=>{if(b.dataset.role==='lecturer')$('evLecturer').value=b.dataset.id;else $('evHost').value=b.dataset.id});
+  document.querySelectorAll('.pick-candidate').forEach(b=>b.onclick=()=>{{const list=b.dataset.role==='lecturer'?state.staff.lecturers:state.staff.hosts;const p=list.find(x=>x.id===b.dataset.id);if(!p)return;if(b.dataset.role==='lecturer')$('evLecturerName').value=p.name;else $('evHostName').value=p.name}});
 }
 function enhancedValidate3Months(){
   const {start,end,months}=getPlannerRange();
