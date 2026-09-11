@@ -445,7 +445,7 @@ function wireLineEditors(){document.querySelectorAll('.line-editor').forEach(row
   if(btn&&pop){btn.onclick=e=>{e.stopPropagation();document.querySelectorAll('.line-color-popover').forEach(x=>{if(x!==pop)x.classList.add('hidden')});pop.classList.toggle('hidden')};pop.onclick=e=>{e.stopPropagation();const sw=e.target.closest('.color-swatch');if(sw){setLineColor(row,sw.dataset.color,true);pop.classList.add('hidden')}}}
   const native=row.querySelector('.line-color-native');if(native)native.oninput=()=>setLineColor(row,native.value,true);
 })}
-function collectLines(){return [...document.querySelectorAll('#lineEditors .line-editor')].map(row=>({text:row.querySelector('.line-text').value,size:+row.querySelector('.line-size').value||14,color:normalizeHexColor(row.querySelector('.line-color-value')?.value),align:row.querySelector('.line-align').value,bold:row.querySelector('.line-bold').classList.contains('active'),italic:row.querySelector('.line-italic').classList.contains('active'),underline:row.querySelector('.line-underline').classList.contains('active')}))}
+// v11.6: 使用前方可指定 containerId 的共用 collectLines()；避免覆寫造成跨月空白格讀不到文字。
 function autofillEventLines(){generatedEventLines().forEach(appendDisplayLine)}
 function saveEvent(id,addSameDay=false){
   const existing=id?state.events.find(x=>x.id===id):null;
