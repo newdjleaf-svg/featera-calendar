@@ -73,6 +73,26 @@ const DEFAULT_APPEARANCE={
   ],
   date:{bg:'#ffffff',transparent:true,text:'#111111',sat:'#d0181d',sun:'#d0181d',holiday:'#d0181d',holidayCustom:true,align:'left',size:19}
 };
+const DEFAULT_CONTACT_LAYOUT={columns:2,rows:4,columnGap:12,rowGap:2,innerGap:3,paddingX:18,paddingY:7,fontSize:10.5,lineHeight:1.2};
+const DEFAULT_CONTACT_STYLES={
+  name:{size:10.5,color:'#111111',align:'left',bold:true,italic:false,underline:false},
+  address:{size:10.5,color:'#111111',align:'left',bold:false,italic:false,underline:false},
+  tel:{size:10.5,color:'#173bb8',align:'left',bold:true,italic:false,underline:false},
+  fax:{size:10.5,color:'#111111',align:'left',bold:false,italic:false,underline:false}
+};
+function ensureContactLayout(){
+  state.meta.contactLayout=Object.assign({},DEFAULT_CONTACT_LAYOUT,state.meta.contactLayout||{});
+  state.meta.contactLayout.columns=Math.max(1,Math.min(6,+state.meta.contactLayout.columns||2));
+  state.meta.contactLayout.rows=Math.max(1,Math.min(20,+state.meta.contactLayout.rows||Math.ceil(Math.max(state.contacts.length,1)/state.meta.contactLayout.columns)));
+  return state.meta.contactLayout;
+}
+function ensureContactStyles(c){
+  c.styles=c.styles||{};
+  for(const k of ['name','address','tel','fax'])c.styles[k]=Object.assign({},DEFAULT_CONTACT_STYLES[k],c.styles[k]||{});
+  return c.styles;
+}
+function contactStyleCss(st){return `font-size:${Number(st.size)||10.5}px;color:${esc(st.color||'#111111')};text-align:${st.align||'left'};font-weight:${st.bold?'900':'400'};font-style:${st.italic?'italic':'normal'};text-decoration:${st.underline?'underline':'none'}`}
+
 const state={
   month:new Date(2026,8,1), mode:'admin', view:'calendar', events:[], blankCells:{}, staff:{lecturers:[],hosts:[],audio:[]}, contacts:[],
   audioMonth:new Date(2026,8,1), audioState:{schedule:[],staff:[],meta:clone(DEFAULT_DJ_META)}, audioContext:{events:[],hosts:[]},
@@ -260,7 +280,26 @@ function renderEvent(e){
   const c=e.headcount?`<span class="count-badge">${esc(e.headcount)}人</span>`:'';
   return `<div class="event-block ${state.mode==='admin'&&!e.systemHoliday?'clickable':''} ${e.systemHoliday?'system-holiday':''}" ${e.systemHoliday?'':`data-id="${esc(e.id)}"`}>${lines}${c}</div>`
 }
-function renderContacts(){$('contactsGrid').innerHTML=state.contacts.map(c=>`<div class="contact-line"><span class="contact-name">※${esc(c.name)}：</span><span>${esc(c.address)}</span><span class="contact-tel">TEL：${esc(c.tel)}</span><span>FAX：${esc(c.fax)}</span></div>`).join('')}
+function renderContacts(){
+  const box=$('contactsGrid'),layout=ensureContactLayout();if(!box)return;
+  const needed=Math.max(state.contacts.length,layout.rows*layout.columns);
+  box.style.setProperty('--contact-cols',layout.columns);
+  box.style.setProperty('--contact-col-gap',`${Number(layout.columnGap)||0}px`);
+  box.style.setProperty('--contact-row-gap',`${Number(layout.rowGap)||0}px`);
+  box.style.setProperty('--contact-inner-gap',`${Number(layout.innerGap)||0}px`);
+  box.style.setProperty('--contact-pad-x',`${Number(layout.paddingX)||0}px`);
+  box.style.setProperty('--contact-pad-y',`${Number(layout.paddingY)||0}px`);
+  box.style.setProperty('--contact-font-size',`${Number(layout.fontSize)||10.5}px`);
+  box.style.setProperty('--contact-line-height',Number(layout.lineHeight)||1.2);
+  let html='';
+  for(let i=0;i<needed;i++){
+    const c=state.contacts[i];
+    if(!c){html+='<div class="contact-line contact-empty"></div>';continue}
+    const st=ensureContactStyles(c);
+    html+=`<div class="contact-line" data-contact-index="${i}"><span class="contact-name" style="${contactStyleCss(st.name)}">※${esc(c.name||'')}：</span><span class="contact-address" style="${contactStyleCss(st.address)}">${esc(c.address||'')}</span><span class="contact-tel" style="${contactStyleCss(st.tel)}">${c.tel?`TEL：${esc(c.tel)}`:''}</span><span class="contact-fax" style="${contactStyleCss(st.fax)}">${c.fax?`FAX：${esc(c.fax)}`:''}</span></div>`;
+  }
+  box.innerHTML=html;
+}
 
 function openModal(title,body,foot=''){$('modalTitle').textContent=title;$('modalBody').innerHTML=body;$('modalFoot').innerHTML=foot;$('modal').classList.remove('hidden')}
 function closeModal(){$('modal').classList.add('hidden')}
@@ -502,7 +541,53 @@ function showAppearance(){
   $('appearanceSave').onclick=async()=>{const btn=$('appearanceSave');const next={weekdays:[],date:{}};document.querySelectorAll('.appearance-row[data-wd]').forEach(row=>next.weekdays.push({bg:row.querySelector('.wd-bg').value,transparent:row.querySelector('.wd-transparent').checked,text:row.querySelector('.wd-text').value}));next.date={bg:$('dateBg').value,transparent:$('dateTransparent').checked,text:$('dateText').value,sat:$('dateSat').value,sun:$('dateSun').value,holiday:$('dateHoliday').value,holidayCustom:$('holidayCustom').checked,align:$('dateAlign').value,size:+$('dateSize').value||19};state.meta.appearance=next;localStorage.setItem(LS_KEY,JSON.stringify({events:state.events,blankCells:state.blankCells||{},staff:state.staff,contacts:state.contacts,meta:state.meta,admin:state.admin,history:state.history}));renderAll();if(cloudReady&&state.mode==='admin'){btn.disabled=true;btn.textContent='同步中…';try{await pushCloudState(false)}catch(e){alert('配色已套用於此裝置，但雲端同步失敗：'+e.message)}finally{btn.disabled=false;btn.textContent='儲存並套用'}}closeModal();};
 }
 
-function showLayout(){openModal('版面設定',`<div class="form-grid"><label class="field span2"><span>大標題格式</span><input id="layTitle" value="${esc(state.meta.titleTemplate)}"><small>可使用 {Y} 年、{M} 月，例如：FEATERA {Y}年{M}月行事曆</small></label><label class="field span2"><span>副標題</span><input id="laySubtitle" value="${esc(state.meta.subtitle||'')}"></label><label class="field"><span>公司營業時間</span><input id="layHours" value="${esc(state.meta.businessHours)}"></label><label class="field"><span>客服專線</span><input id="layHotline" value="${esc(state.meta.hotline)}"></label><div class="span2 toolbar-row"><button id="chooseLogo" class="secondary">上傳 / 更換 Logo</button><button id="clearLogo" class="secondary">移除 Logo</button></div><div class="span2"><b>分公司聯絡資訊</b><div id="contactEditors">${state.contacts.map((c,i)=>`<div class="form-grid" style="border-top:1px solid #ddd;padding-top:10px;margin-top:8px"><label class="field"><span>名稱</span><input data-c="${i}" data-k="name" value="${esc(c.name)}"></label><label class="field"><span>地址</span><input data-c="${i}" data-k="address" value="${esc(c.address)}"></label><label class="field"><span>TEL</span><input data-c="${i}" data-k="tel" value="${esc(c.tel)}"></label><label class="field"><span>FAX</span><input data-c="${i}" data-k="fax" value="${esc(c.fax)}"></label></div>`).join('')}</div></div>`, `<button id="layCancel" class="secondary">取消</button><button id="laySave" class="primary">儲存</button>`);$('chooseLogo').onclick=()=>$('logoUpload').click();$('clearLogo').onclick=()=>{state.meta.logo='';renderHeader()};$('layCancel').onclick=closeModal;$('laySave').onclick=()=>{state.meta.titleTemplate=$('layTitle').value||'{Y}年{M}月行事曆';state.meta.subtitle=$('laySubtitle').value;state.meta.businessHours=$('layHours').value;state.meta.hotline=$('layHotline').value;document.querySelectorAll('#contactEditors input[data-c]').forEach(i=>state.contacts[+i.dataset.c][i.dataset.k]=i.value);saveLocal();closeModal();renderAll()}}
+function contactFieldEditor(c,i,key,label){
+  const styles=ensureContactStyles(c),st=styles[key];
+  return `<div class="contact-field-editor" data-contact="${i}" data-key="${key}">
+    <label class="field contact-text-field"><span>${label}</span><input class="contact-text-input" value="${esc(c[key]||'')}"></label>
+    <div class="contact-style-toolbar"><label>字級 <input class="contact-style-size" type="number" min="6" max="40" step="0.5" value="${Number(st.size)||10.5}"></label>${lineColorControl(st.color||'#111111','contact')}<select class="contact-style-align"><option value="left" ${st.align==='left'?'selected':''}>靠左</option><option value="center" ${st.align==='center'?'selected':''}>置中</option><option value="right" ${st.align==='right'?'selected':''}>靠右</option></select><button type="button" class="mini toggle contact-bold ${st.bold?'active':''}"><b>B</b></button><button type="button" class="mini toggle contact-italic ${st.italic?'active':''}"><i>I</i></button><button type="button" class="mini toggle contact-underline ${st.underline?'active':''}"><u>U</u></button></div>
+  </div>`;
+}
+function contactEditorCard(c,i){
+  ensureContactStyles(c);
+  return `<div class="contact-editor-card" data-contact-index="${i}"><div class="contact-card-head"><b>聯絡資訊 ${i+1}</b><div class="toolbar-row compact"><button type="button" class="mini contact-move-up" title="上移">▲</button><button type="button" class="mini contact-move-down" title="下移">▼</button><button type="button" class="mini danger contact-remove">刪除</button></div></div>${contactFieldEditor(c,i,'name','名稱')}${contactFieldEditor(c,i,'address','地址')}${contactFieldEditor(c,i,'tel','TEL')}${contactFieldEditor(c,i,'fax','FAX')}</div>`;
+}
+function wireContactEditors(){
+  document.querySelectorAll('.contact-editor-card').forEach(card=>{
+    card.querySelectorAll('.contact-field-editor').forEach(row=>{
+      row.querySelectorAll('.toggle').forEach(btn=>btn.onclick=()=>btn.classList.toggle('active'));
+      wireColorControl(row.querySelector('.line-color-control'),'contact');
+    });
+    card.querySelector('.contact-remove').onclick=()=>{card.remove();reindexContactCards()};
+    card.querySelector('.contact-move-up').onclick=()=>{const p=card.previousElementSibling;if(p)card.parentNode.insertBefore(card,p);reindexContactCards()};
+    card.querySelector('.contact-move-down').onclick=()=>{const n=card.nextElementSibling;if(n)n.after(card);reindexContactCards()};
+  });
+}
+function reindexContactCards(){document.querySelectorAll('#contactEditors .contact-editor-card').forEach((card,i)=>{card.dataset.contactIndex=i;const b=card.querySelector('.contact-card-head>b');if(b)b.textContent=`聯絡資訊 ${i+1}`;card.querySelectorAll('.contact-field-editor').forEach(r=>r.dataset.contact=i)})}
+function readContactEditors(){
+  return [...document.querySelectorAll('#contactEditors .contact-editor-card')].map(card=>{
+    const c={name:'',address:'',tel:'',fax:'',styles:{}};
+    card.querySelectorAll('.contact-field-editor').forEach(row=>{const key=row.dataset.key;c[key]=row.querySelector('.contact-text-input').value;c.styles[key]={size:+row.querySelector('.contact-style-size').value||10.5,color:normalizeHexColor(row.querySelector('.contact-color-value')?.value),align:row.querySelector('.contact-style-align').value,bold:row.querySelector('.contact-bold').classList.contains('active'),italic:row.querySelector('.contact-italic').classList.contains('active'),underline:row.querySelector('.contact-underline').classList.contains('active')}});
+    return c;
+  });
+}
+function showLayout(){
+  const lay=ensureContactLayout();state.contacts.forEach(ensureContactStyles);
+  openModal('版面設定',`<div class="form-grid"><label class="field span2"><span>大標題格式</span><input id="layTitle" value="${esc(state.meta.titleTemplate)}"><small>可使用 {Y} 年、{M} 月，例如：FEATERA {Y}年{M}月行事曆</small></label><label class="field span2"><span>副標題</span><input id="laySubtitle" value="${esc(state.meta.subtitle||'')}"></label><label class="field"><span>公司營業時間</span><input id="layHours" value="${esc(state.meta.businessHours)}"></label><label class="field"><span>客服專線</span><input id="layHotline" value="${esc(state.meta.hotline)}"></label><div class="span2 toolbar-row"><button id="chooseLogo" class="secondary">上傳 / 更換 Logo</button><button id="clearLogo" class="secondary">移除 Logo</button></div>
+  <div class="span2 contact-layout-panel"><h3>底部聯絡資訊版面</h3><div class="panel-note">可自由調整行數、列數、行距、列距與每筆資訊內部間距。聯絡資訊每個文字區塊都可個別調整字級、顏色、靠左／置中／靠右、粗體、斜體、底線。</div><div class="contact-layout-controls">
+    <label>列數 <div class="stepper"><button id="contactColMinus" type="button" class="mini">−</button><input id="contactCols" type="number" min="1" max="6" value="${lay.columns}"><button id="contactColPlus" type="button" class="mini">＋</button></div></label>
+    <label>行數 <div class="stepper"><button id="contactRowMinus" type="button" class="mini">−</button><input id="contactRows" type="number" min="1" max="20" value="${lay.rows}"><button id="contactRowPlus" type="button" class="mini">＋</button></div></label>
+    <label>列間距 <input id="contactColGap" type="number" min="0" max="120" value="${lay.columnGap}"> px</label><label>行間距 <input id="contactRowGap" type="number" min="0" max="60" value="${lay.rowGap}"> px</label>
+    <label>同筆文字間距 <input id="contactInnerGap" type="number" min="0" max="40" value="${lay.innerGap}"> px</label><label>整體左右留白 <input id="contactPadX" type="number" min="0" max="80" value="${lay.paddingX}"> px</label><label>整體上下留白 <input id="contactPadY" type="number" min="0" max="50" value="${lay.paddingY}"> px</label><label>預設行高 <input id="contactLineHeight" type="number" min="0.8" max="3" step="0.05" value="${lay.lineHeight}"></label>
+  </div><div class="toolbar-row"><button id="addContact" type="button" class="primary">＋ 新增聯絡資訊</button><button id="addContactRow" type="button" class="secondary">＋ 新增一行</button><button id="addContactCol" type="button" class="secondary">＋ 新增一列</button><span class="panel-note-inline">新增行／列只改變版面格數；「新增聯絡資訊」才會增加一筆資料。</span></div><div id="contactEditors" class="contact-editors">${state.contacts.map(contactEditorCard).join('')}</div></div></div>`, `<button id="layCancel" class="secondary">取消</button><button id="laySave" class="primary">儲存</button>`);
+  $('chooseLogo').onclick=()=>$('logoUpload').click();$('clearLogo').onclick=()=>{state.meta.logo='';renderHeader()};$('layCancel').onclick=closeModal;
+  const bump=(id,delta,min,max)=>{const el=$(id);el.value=Math.max(min,Math.min(max,(+el.value||min)+delta))};
+  $('contactColMinus').onclick=()=>bump('contactCols',-1,1,6);$('contactColPlus').onclick=()=>bump('contactCols',1,1,6);$('contactRowMinus').onclick=()=>bump('contactRows',-1,1,20);$('contactRowPlus').onclick=()=>bump('contactRows',1,1,20);
+  $('addContactRow').onclick=()=>bump('contactRows',1,1,20);$('addContactCol').onclick=()=>bump('contactCols',1,1,6);
+  $('addContact').onclick=()=>{const box=$('contactEditors'),i=box.querySelectorAll('.contact-editor-card').length;const c={name:'',address:'',tel:'',fax:'',styles:clone(DEFAULT_CONTACT_STYLES)};box.insertAdjacentHTML('beforeend',contactEditorCard(c,i));wireContactEditors();reindexContactCards()};
+  wireContactEditors();
+  $('laySave').onclick=()=>{state.meta.titleTemplate=$('layTitle').value||'{Y}年{M}月行事曆';state.meta.subtitle=$('laySubtitle').value;state.meta.businessHours=$('layHours').value;state.meta.hotline=$('layHotline').value;state.contacts=readContactEditors();state.meta.contactLayout={columns:Math.max(1,Math.min(6,+$('contactCols').value||2)),rows:Math.max(1,Math.min(20,+$('contactRows').value||4)),columnGap:Math.max(0,+$('contactColGap').value||0),rowGap:Math.max(0,+$('contactRowGap').value||0),innerGap:Math.max(0,+$('contactInnerGap').value||0),paddingX:Math.max(0,+$('contactPadX').value||0),paddingY:Math.max(0,+$('contactPadY').value||0),fontSize:10.5,lineHeight:Math.max(.8,+$('contactLineHeight').value||1.2)};saveLocal();closeModal();renderAll()};
+}
 function handleLogoUpload(e){const f=e.target.files?.[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{state.meta.logo=rd.result;saveLocal();renderHeader()};rd.readAsDataURL(f);e.target.value=''}
 function showSettings(){openModal('系統設定',`<div class="form-grid"><div class="span2 panel-note"><b>Railway PostgreSQL 雲端版</b><br>管理員帳號與密碼由 Railway Service Variables 管理：<code>ADMIN_USER</code>、<code>ADMIN_PASSWORD</code>。資料會在管理員儲存修改時自動同步；訪客登入時會自動讀取最新雲端資料。</div><label class="field span2"><span>台灣國定假日</span><span class="check-label"><input id="taiwanHolidayToggle" type="checkbox" ${state.meta.taiwanHolidays!==false?'checked':''}> 自動顯示行政院人事行政總處公布之國定假日／補假／連假（目前內建 2026、2027）</span><small>系統假日不會覆蓋你手動建立的假日行程；假日日期與文字顏色沿用「星期 / 日期配色」中的國定假日顏色。</small></label></div>`,`<button id="setClose" class="secondary">取消</button><button id="setSave" class="primary">儲存設定</button>`);$('setClose').onclick=closeModal;$('setSave').onclick=()=>{state.meta.taiwanHolidays=$('taiwanHolidayToggle').checked;saveLocal();renderAll();closeModal()}}
 function showCloud(){openModal('Railway 雲端同步',`<div class="panel-note">目前使用 Railway PostgreSQL。登入時自動下載最新資料；管理員每次儲存修改後會自動上傳。也可在此手動同步。</div><div class="toolbar-row"><button id="cloudUpload" class="primary admin-only">↑ 立即上傳</button><button id="cloudDownload" class="secondary">↓ 重新下載</button></div><div id="cloudStatus"></div>`,`<button id="cloudClose" class="secondary">關閉</button>`);$('cloudClose').onclick=closeModal;if(state.mode==='guest')$('cloudUpload')?.classList.add('hidden');$('cloudUpload')?.addEventListener('click',async()=>{try{$('cloudStatus').textContent='上傳中…';await pushCloudState(false);$('cloudStatus').textContent='✅ 已完成 PostgreSQL 上傳'}catch(e){$('cloudStatus').textContent='❌ '+e.message}});$('cloudDownload').onclick=async()=>{try{$('cloudStatus').textContent='下載中…';await pullCloudState();renderAll();$('cloudStatus').textContent='✅ 已下載最新雲端資料'}catch(e){$('cloudStatus').textContent='❌ '+e.message}}}
