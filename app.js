@@ -3,6 +3,8 @@ const LS_KEY='featera_calendar_v3';
 const CONFIG_KEY='featera_calendar_config_v1';
 const DEFAULT_ADMIN={user:'Featera',pass:'featera168'};
 const RANKS=['SM','GM','PM','SD','GD','PD','SP','GP','PP','DP','DDP'];
+const RANK_ZH={SM:'經理',GM:'經理',PM:'經理',SD:'總監',GD:'總監',PD:'總監',SP:'總裁',GP:'總裁',PP:'總裁',DP:'總裁',DDP:'總裁'};
+function rankWithZh(rank){return rank?`${rank} ${RANK_ZH[rank]||''}`.trim():''}
 const REGIONS=['台北','中壢','宜蘭','花蓮','台中','嘉義','台南','高雄','台東'];
 const COURSE_TYPES=['系統培訓','健康回饋日','說明會','NDO/希望工程','MCC','會議','假日/休假','其他'];
 
@@ -281,7 +283,7 @@ function generatedEventLines(){
   const lines=[];
   const first=[region,course||type].filter(Boolean).join('-');
   if(first)lines.push({text:first,size:16,color:'#111111',align:'left',bold:true,italic:false,underline:false});
-  if(host)lines.push({text:`主持：${host.name}${host.rank?' '+host.rank:''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
+  if(host)lines.push({text:`主持：${host.name}${host.rank?' '+rankWithZh(host.rank):''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
   else if($('evHostName').value.trim())lines.push({text:`主持：${$('evHostName').value.trim()}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
   if(lec)lines.push({text:`講師：${lec.name}${lec.stars?' '+['','一星','二星','三星'][lec.stars]+'講師':''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
   else if($('evLecturerName').value.trim())lines.push({text:`講師：${$('evLecturerName').value.trim()}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
