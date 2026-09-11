@@ -329,7 +329,58 @@ function wireLineEditors(root=document){root.querySelectorAll('.line-editor').fo
   wireSegmentRows(row);
 })}
 function collectLines(containerId='lineEditors'){const box=$(containerId);if(!box)return[];return [...box.querySelectorAll('.line-editor')].map(row=>{const base={text:row.querySelector('.line-text').value,size:+row.querySelector('.line-size').value||14,color:normalizeHexColor(row.querySelector('.line-color-value')?.value),align:row.querySelector('.line-align').value,bold:row.querySelector('.line-bold').classList.contains('active'),italic:row.querySelector('.line-italic').classList.contains('active'),underline:row.querySelector('.line-underline').classList.contains('active')};if(row.classList.contains('is-segmented')){base.segments=[...row.querySelectorAll('.segment-row')].map(seg=>({text:seg.querySelector('.segment-text').value,color:normalizeHexColor(seg.querySelector('.segment-color-value')?.value),bold:seg.querySelector('.segment-bold').classList.contains('active'),italic:seg.querySelector('.segment-italic').classList.contains('active'),underline:seg.querySelector('.segment-underline').classList.contains('active')}));base.text=base.segments.map(x=>x.text).join('')}return base})}
-function openBlankCellEditor(key){state.blankCells=state.blankCells||{};const existing=clone(state.blankCells[key]||{lines:[]});openModal('編輯跨月空白格 / 注意事項',`<div class="panel-note">此格不代表任何日期，可用來放注意事項、課程說明、聯絡資訊或版面備註；內容會跟著目前月份保存並同步到雲端。</div><div class="display-lines-panel"><div class="toolbar-row"><b>顯示文字</b><button id="blankAddLineBtn" type="button" class="secondary">＋ 新增一行</button><button id="blankAddSpaceBtn" type="button" class="secondary">＋ 空白間距行</button></div><div id="blankLineEditors">${lineEditorHtml(existing.lines||[])}</div></div>`,`<button id="blankDeleteBtn" class="danger">清除此格</button><button id="blankCancelBtn" class="secondary">取消</button><button id="blankSaveBtn" class="primary">儲存</button>`);wireLineEditors($('blankLineEditors'));$('blankAddLineBtn').onclick=()=>appendDisplayLine({text:'',size:14,color:'#111111',align:'left',bold:false,italic:false,underline:false},'blankLineEditors');$('blankAddSpaceBtn').onclick=()=>appendDisplayLine({text:'',size:18,color:'#111111',align:'left',bold:false,italic:false,underline:false},'blankLineEditors');$('blankCancelBtn').onclick=closeModal;$('blankDeleteBtn').onclick=()=>{delete state.blankCells[key];saveLocal();closeModal();renderAll()};$('blankSaveBtn').onclick=()=>{const lines=collectLines('blankLineEditors');lines.forEach(l=>{rememberLineColor(l.color);(l.segments||[]).forEach(s=>rememberLineColor(s.color))});state.blankCells[key]={lines};saveLocal();closeModal();renderAll()}}
+function generatedBlankCellLines(){
+  const type=$('blankType')?.value.trim()||'',course=$('blankCourseName')?.value.trim()||'',region=$('blankRegion')?.value.trim()||'';
+  const hostName=$('blankHostName')?.value.trim()||'',lecName=$('blankLecturerName')?.value.trim()||'',head=$('blankCount')?.value||'';
+  const host=personByName(state.staff.hosts,hostName),lec=personByName(state.staff.lecturers,lecName);
+  const lines=[];
+  const first=[region,course||type].filter(Boolean).join('-');
+  if(first){const segs=[];if(region)segs.push({text:region+(course||type?'-':''),color:'#111111',bold:true,italic:false,underline:false});if(course||type)segs.push({text:course||type,color:'#111111',bold:true,italic:false,underline:false});lines.push({text:first,size:16,color:'#111111',align:'left',bold:true,italic:false,underline:false,segments:segs.length>1?segs:undefined})}
+  if(host)lines.push({text:`主持：${host.name}${host.rank?' '+rankWithZh(host.rank):''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
+  else if(hostName)lines.push({text:`主持：${hostName}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
+  if(lec)lines.push({text:`講師：${lec.name}${lec.stars?' '+['','一星','二星','三星'][lec.stars]+'講師':''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
+  else if(lecName)lines.push({text:`講師：${lecName}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
+  if(head)lines.push({text:`統計人數：${head}人`,size:12,color:'#555555',align:'left',bold:false,italic:false,underline:false});
+  return lines;
+}
+function openBlankCellEditor(key){
+  state.blankCells=state.blankCells||{};
+  const existing=clone(state.blankCells[key]||{lines:[],type:'',courseName:'',region:'',lecturerName:'',hostName:'',headcount:'',note:''});
+  openModal('跨月空白格行程排定',`<div class="event-assist-note panel-note"><b>跨月空白格也可排入內容</b>：可像一般行程一樣從上方快速帶入課程、區域、主持人、講師與統計人數；加入下方後，每一行都能完全獨立修改文字、大小、顏色、對齊、粗體、斜體、底線、分段顏色與順序。此格不代表實際日期，不參與三個月排程衝突檢查。</div>
+  <div class="form-grid event-assist-grid blank-assist-grid">
+    <label class="field"><span>課程類型（可選／可新增）</span><input id="blankType" list="blankTypeList" value="${esc(existing.type||'')}" placeholder="例如：系統培訓">${datalistHtml('blankTypeList',COURSE_TYPES)}</label>
+    <label class="field"><span>課程 / 活動名稱（可選／可新增）</span><input id="blankCourseName" list="blankCourseList" value="${esc(existing.courseName||'')}" placeholder="例如：注意事項 / 健康回饋日">${datalistHtml('blankCourseList',courseSuggestionNames())}</label>
+    <label class="field"><span>區域（可選／可新增）</span><input id="blankRegion" list="blankRegionList" value="${esc(existing.region||'')}" placeholder="例如：中壢">${datalistHtml('blankRegionList',REGIONS)}</label>
+    <label class="field"><span>統計人數</span><input id="blankCount" type="number" min="0" value="${esc(existing.headcount||'')}" placeholder="可留空"></label>
+    <label class="field"><span>講師（可選／可新增）</span><input id="blankLecturerName" list="blankLecturerList" value="${esc(existing.lecturerName||'')}" placeholder="輸入或選擇講師">${datalistHtml('blankLecturerList',state.staff.lecturers.map(x=>x.name))}</label>
+    <label class="field"><span>主持人（可選／可新增）</span><input id="blankHostName" list="blankHostList" value="${esc(existing.hostName||'')}" placeholder="輸入或選擇主持人">${datalistHtml('blankHostList',state.staff.hosts.map(x=>x.name))}</label>
+    <label class="field span2"><span>附註事項（內部備註，不固定顯示）</span><textarea id="blankNote">${esc(existing.note||'')}</textarea></label>
+    <div class="span2 transfer-panel"><div class="transfer-title"><b>↓ 將上方資料加入下方顯示文字</b><span>可重複加入多組內容，同一個空白格可排多筆文字。</span></div>
+      <div class="toolbar-row transfer-buttons"><button id="blankAddCourseBtn" type="button" class="secondary">＋ 課程 / 區域</button><button id="blankAddHostBtn" type="button" class="secondary">＋ 主持人</button><button id="blankAddLecturerBtn" type="button" class="secondary">＋ 講師</button><button id="blankAddCountBtn" type="button" class="secondary">＋ 統計人數</button><button id="blankAutoFillBtn" type="button" class="primary">＋ 全部加入下方</button></div>
+    </div>
+    <div class="span2 display-lines-panel"><div class="toolbar-row"><b>實際顯示文字（每行皆可修改）</b><button id="blankAddLineBtn" type="button" class="secondary">＋ 手動新增一行</button><button id="blankAddSpaceBtn" type="button" class="secondary">＋ 空白間距行</button></div><div class="panel-note small-note">下方才是實際出現在跨月空白格的內容。每行都可自由輸入，並可獨立設定字體大小、顏色、左／中／右、粗體、斜體、底線、同一行分段顏色與上下順序。</div><div id="blankLineEditors">${lineEditorHtml(existing.lines||[])}</div></div>
+  </div>`,`<button id="blankDeleteBtn" class="danger">清除此格</button><button id="blankCancelBtn" class="secondary">取消</button><button id="blankSaveBtn" class="primary">儲存</button>`);
+  wireLineEditors($('blankLineEditors'));
+  $('blankAddLineBtn').onclick=()=>appendDisplayLine({text:'',size:14,color:'#111111',align:'left',bold:false,italic:false,underline:false},'blankLineEditors');
+  $('blankAddSpaceBtn').onclick=()=>appendDisplayLine({text:'',size:18,color:'#111111',align:'left',bold:false,italic:false,underline:false},'blankLineEditors');
+  $('blankAddCourseBtn').onclick=()=>{const [x]=generatedBlankCellLines();if(x)appendDisplayLine(x,'blankLineEditors')};
+  $('blankAddHostBtn').onclick=()=>{const x=generatedBlankCellLines().find(x=>x.text.startsWith('主持：'));if(x)appendDisplayLine(x,'blankLineEditors')};
+  $('blankAddLecturerBtn').onclick=()=>{const x=generatedBlankCellLines().find(x=>x.text.startsWith('講師：'));if(x)appendDisplayLine(x,'blankLineEditors')};
+  $('blankAddCountBtn').onclick=()=>{const x=generatedBlankCellLines().find(x=>x.text.startsWith('統計人數：'));if(x)appendDisplayLine(x,'blankLineEditors')};
+  $('blankAutoFillBtn').onclick=()=>generatedBlankCellLines().forEach(x=>appendDisplayLine(x,'blankLineEditors'));
+  $('blankCancelBtn').onclick=closeModal;
+  $('blankDeleteBtn').onclick=()=>{delete state.blankCells[key];saveLocal();closeModal();renderAll()};
+  $('blankSaveBtn').onclick=()=>{
+    const lines=collectLines('blankLineEditors');
+    lines.forEach(l=>{rememberLineColor(l.color);(l.segments||[]).forEach(s=>rememberLineColor(s.color))});
+    const type=$('blankType').value.trim(),courseName=$('blankCourseName').value.trim(),region=$('blankRegion').value.trim(),lecturerName=$('blankLecturerName').value.trim(),hostName=$('blankHostName').value.trim();
+    if(courseName)ensureCourseFromInput(courseName,type);
+    if(lecturerName)ensurePersonFromInput('lecturer',lecturerName);
+    if(hostName)ensurePersonFromInput('host',hostName);
+    state.blankCells[key]={lines,type,courseName,region,lecturerName,hostName,headcount:$('blankCount').value,note:$('blankNote').value};
+    saveLocal();closeModal();renderAll();
+  };
+}
 function generatedEventLines(){
   const type=$('evType').value.trim(),course=$('evCourseName').value.trim(),region=$('evRegion').value.trim();
   const lec=personByName(state.staff.lecturers,$('evLecturerName').value),host=personByName(state.staff.hosts,$('evHostName').value);

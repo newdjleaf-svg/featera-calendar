@@ -190,3 +190,7 @@ body.admin-mode .day.blank[data-blank-key]:hover{box-shadow:inset 0 0 0 2px #7aa
 .segment-row .line-color-btn{width:48px;height:34px}
 .line-editor.is-segmented>.line-toolbar>.line-text{background:#f2f5f1;color:#526052}
 @media(max-width:900px){.segment-row{grid-template-columns:minmax(160px,1fr) 54px 40px 40px 40px 42px;overflow-x:auto}.blank-note-content{padding:5px}}
+
+/* v11.5 跨月空白格完整行程排定 */
+.blank-assist-grid{align-items:start}.day.blank.has-blank-note .blank-note-content{pointer-events:none}
+@media(max-width:900px){.blank-assist-grid{grid-template-columns:1fr}.blank-assist-grid .span2{grid-column:1}}
