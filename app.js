@@ -27,6 +27,38 @@ const DEFAULT_DJ_SCHEDULE=[
   {id:'djsp10',date:'2026-09-28',region:'全區',personId:'',text:'教師節',size:16,color:'#c71920',align:'center',bold:true,italic:false,underline:false,note:'',kind:'special'}
 ]);
 
+
+// Taiwan government holidays (DGPA official work calendars).
+// System holidays are generated at render time, so they do not overwrite user-created events.
+const TAIWAN_HOLIDAYS={
+  2026:{
+    '2026-01-01':'中華民國開國紀念日',
+    '2026-02-14':'春節連假','2026-02-15':'春節連假','2026-02-16':'除夕前一日','2026-02-17':'除夕','2026-02-18':'春節','2026-02-19':'春節','2026-02-20':'春節補假','2026-02-21':'春節連假','2026-02-22':'春節連假',
+    '2026-02-27':'和平紀念日補假','2026-02-28':'和平紀念日','2026-03-01':'和平紀念日連假',
+    '2026-04-03':'兒童節補假','2026-04-04':'兒童節','2026-04-05':'清明節','2026-04-06':'清明節補假',
+    '2026-05-01':'勞動節','2026-05-02':'勞動節連假','2026-05-03':'勞動節連假',
+    '2026-06-19':'端午節','2026-06-20':'端午節連假','2026-06-21':'端午節連假',
+    '2026-09-25':'中秋節','2026-09-26':'中秋節連假','2026-09-27':'中秋節連假','2026-09-28':'孔子誕辰紀念日／教師節',
+    '2026-10-09':'國慶日補假','2026-10-10':'國慶日','2026-10-11':'國慶日連假',
+    '2026-10-24':'光復節連假','2026-10-25':'臺灣光復暨金門古寧頭大捷紀念日','2026-10-26':'光復節補假',
+    '2026-12-25':'行憲紀念日','2026-12-26':'行憲紀念日連假','2026-12-27':'行憲紀念日連假'
+  },
+  2027:{
+    '2027-01-01':'中華民國開國紀念日','2027-01-02':'元旦連假','2027-01-03':'元旦連假',
+    '2027-02-04':'除夕前一日','2027-02-05':'除夕','2027-02-06':'春節','2027-02-07':'春節','2027-02-08':'春節','2027-02-09':'春節補假','2027-02-10':'春節補假',
+    '2027-02-27':'和平紀念日連假','2027-02-28':'和平紀念日','2027-03-01':'和平紀念日補假',
+    '2027-04-03':'兒童節／清明節連假','2027-04-04':'兒童節','2027-04-05':'清明節','2027-04-06':'兒童節補假',
+    '2027-04-30':'勞動節補假','2027-05-01':'勞動節','2027-05-02':'勞動節連假',
+    '2027-06-09':'端午節','2027-09-15':'中秋節','2027-09-28':'孔子誕辰紀念日／教師節',
+    '2027-10-09':'國慶日連假','2027-10-10':'國慶日','2027-10-11':'國慶日補假',
+    '2027-10-23':'光復節連假','2027-10-24':'光復節連假','2027-10-25':'臺灣光復暨金門古寧頭大捷紀念日',
+    '2027-12-24':'行憲紀念日補假','2027-12-25':'行憲紀念日','2027-12-26':'行憲紀念日連假','2027-12-31':'2028元旦補假'
+  }
+};
+function taiwanHolidayName(date){return state.meta.taiwanHolidays===false?'':(TAIWAN_HOLIDAYS[+String(date).slice(0,4)]?.[date]||'')}
+function systemHolidayEvent(date){const name=taiwanHolidayName(date);if(!name)return null;return {id:'sys-holiday-'+date,date,type:'假日/休假',systemHoliday:true,highlight:false,lines:[{text:name,size:16,color:ensureAppearance().date.holiday||'#d0181d',align:'center',bold:true,italic:false,underline:false}],order:999}}
+function calendarEventsForDate(date){const user=state.events.filter(e=>e.date===date).sort((a,b)=>(a.order||0)-(b.order||0));const sys=systemHolidayEvent(date);if(!sys)return user;return user.some(isHolidayEvent)?user:[...user,sys]}
+
 const DEFAULT_APPEARANCE={
   weekdays:[
     {bg:'#ffffff',transparent:false,text:'#111111'},
@@ -42,7 +74,7 @@ const DEFAULT_APPEARANCE={
 const state={
   month:new Date(2026,8,1), mode:'admin', view:'calendar', events:[], staff:{lecturers:[],hosts:[],audio:[]}, contacts:[],
   audioMonth:new Date(2026,8,1), audioState:{schedule:[],staff:[],meta:clone(DEFAULT_DJ_META)}, audioContext:{events:[],hosts:[]},
-  meta:{titleTemplate:'{Y}年{M}月行事曆',subtitle:'',businessHours:'',hotline:'',logo:'',appearance:clone(DEFAULT_APPEARANCE)}, admin:{...DEFAULT_ADMIN}, history:[], reference:{lecturers:[],hosts:[],courseCatalog:[],courseNameUpdates:[],schedulingRules:[]}
+  meta:{titleTemplate:'{Y}年{M}月行事曆',subtitle:'',businessHours:'',hotline:'',logo:'',taiwanHolidays:true,appearance:clone(DEFAULT_APPEARANCE)}, admin:{...DEFAULT_ADMIN}, history:[], reference:{lecturers:[],hosts:[],courseCatalog:[],courseNameUpdates:[],schedulingRules:[]}
 };
 let cloudReady=false;
 let cloudSaveTimer=null;
@@ -192,7 +224,7 @@ function renderCalendar(){
   const y=state.month.getFullYear(),m=state.month.getMonth(),first=new Date(y,m,1),days=new Date(y,m+1,0).getDate(),offset=(first.getDay()+6)%7,weeks=weeksForMonth(y,m);let html='';
   for(let i=0;i<weeks*7;i++){
     const d=i-offset+1;if(d<1||d>days){html+=`<div class="day blank"></div>`;continue}
-    const dateObj=new Date(y,m,d),date=ymd(dateObj),dow=dateObj.getDay(),evs=state.events.filter(e=>e.date===date).sort((a,b)=>(a.order||0)-(b.order||0));
+    const dateObj=new Date(y,m,d),date=ymd(dateObj),dow=dateObj.getDay(),evs=calendarEventsForDate(date);
     const holiday=evs.some(isHolidayEvent),ds=appearance.date;
     let dateColor=ds.text||'#111111';
     if(holiday&&ds.holidayCustom!==false)dateColor=ds.holiday||'#d0181d';else if(dow===6)dateColor=ds.sat||'#d0181d';else if(dow===0)dateColor=ds.sun||'#d0181d';
@@ -206,7 +238,7 @@ function renderCalendar(){
 function renderEvent(e){
   const lines=(e.lines||[]).map((l,idx)=>{const st=`font-size:${Number(l.size)||14}px;color:${esc(l.color||'#111')};text-align:${l.align||'left'};font-weight:${l.bold?'900':'400'};font-style:${l.italic?'italic':'normal'};text-decoration:${l.underline?'underline':'none'}`;return `<div class="calendar-line ${idx===0&&e.highlight?'region-line':''}" style="${st}">${esc(l.text)}</div>`}).join('');
   const c=e.headcount?`<span class="count-badge">${esc(e.headcount)}人</span>`:'';
-  return `<div class="event-block ${state.mode==='admin'?'clickable':''}" data-id="${esc(e.id)}">${lines}${c}</div>`
+  return `<div class="event-block ${state.mode==='admin'&&!e.systemHoliday?'clickable':''} ${e.systemHoliday?'system-holiday':''}" ${e.systemHoliday?'':`data-id="${esc(e.id)}"`}>${lines}${c}</div>`
 }
 function renderContacts(){$('contactsGrid').innerHTML=state.contacts.map(c=>`<div class="contact-line"><span class="contact-name">※${esc(c.name)}：</span><span>${esc(c.address)}</span><span class="contact-tel">TEL：${esc(c.tel)}</span><span>FAX：${esc(c.fax)}</span></div>`).join('')}
 
@@ -291,7 +323,7 @@ function showAppearance(){
 
 function showLayout(){openModal('版面設定',`<div class="form-grid"><label class="field span2"><span>大標題格式</span><input id="layTitle" value="${esc(state.meta.titleTemplate)}"><small>可使用 {Y} 年、{M} 月，例如：FEATERA {Y}年{M}月行事曆</small></label><label class="field span2"><span>副標題</span><input id="laySubtitle" value="${esc(state.meta.subtitle||'')}"></label><label class="field"><span>公司營業時間</span><input id="layHours" value="${esc(state.meta.businessHours)}"></label><label class="field"><span>客服專線</span><input id="layHotline" value="${esc(state.meta.hotline)}"></label><div class="span2 toolbar-row"><button id="chooseLogo" class="secondary">上傳 / 更換 Logo</button><button id="clearLogo" class="secondary">移除 Logo</button></div><div class="span2"><b>分公司聯絡資訊</b><div id="contactEditors">${state.contacts.map((c,i)=>`<div class="form-grid" style="border-top:1px solid #ddd;padding-top:10px;margin-top:8px"><label class="field"><span>名稱</span><input data-c="${i}" data-k="name" value="${esc(c.name)}"></label><label class="field"><span>地址</span><input data-c="${i}" data-k="address" value="${esc(c.address)}"></label><label class="field"><span>TEL</span><input data-c="${i}" data-k="tel" value="${esc(c.tel)}"></label><label class="field"><span>FAX</span><input data-c="${i}" data-k="fax" value="${esc(c.fax)}"></label></div>`).join('')}</div></div>`, `<button id="layCancel" class="secondary">取消</button><button id="laySave" class="primary">儲存</button>`);$('chooseLogo').onclick=()=>$('logoUpload').click();$('clearLogo').onclick=()=>{state.meta.logo='';renderHeader()};$('layCancel').onclick=closeModal;$('laySave').onclick=()=>{state.meta.titleTemplate=$('layTitle').value||'{Y}年{M}月行事曆';state.meta.subtitle=$('laySubtitle').value;state.meta.businessHours=$('layHours').value;state.meta.hotline=$('layHotline').value;document.querySelectorAll('#contactEditors input[data-c]').forEach(i=>state.contacts[+i.dataset.c][i.dataset.k]=i.value);saveLocal();closeModal();renderAll()}}
 function handleLogoUpload(e){const f=e.target.files?.[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{state.meta.logo=rd.result;saveLocal();renderHeader()};rd.readAsDataURL(f);e.target.value=''}
-function showSettings(){openModal('系統設定',`<div class="form-grid"><div class="span2 panel-note"><b>Railway PostgreSQL 雲端版</b><br>管理員帳號與密碼由 Railway Service Variables 管理：<code>ADMIN_USER</code>、<code>ADMIN_PASSWORD</code>。資料會在管理員儲存修改時自動同步；訪客登入時會自動讀取最新雲端資料。</div></div>`,`<button id="setClose" class="primary">關閉</button>`);$('setClose').onclick=closeModal}
+function showSettings(){openModal('系統設定',`<div class="form-grid"><div class="span2 panel-note"><b>Railway PostgreSQL 雲端版</b><br>管理員帳號與密碼由 Railway Service Variables 管理：<code>ADMIN_USER</code>、<code>ADMIN_PASSWORD</code>。資料會在管理員儲存修改時自動同步；訪客登入時會自動讀取最新雲端資料。</div><label class="field span2"><span>台灣國定假日</span><span class="check-label"><input id="taiwanHolidayToggle" type="checkbox" ${state.meta.taiwanHolidays!==false?'checked':''}> 自動顯示行政院人事行政總處公布之國定假日／補假／連假（目前內建 2026、2027）</span><small>系統假日不會覆蓋你手動建立的假日行程；假日日期與文字顏色沿用「星期 / 日期配色」中的國定假日顏色。</small></label></div>`,`<button id="setClose" class="secondary">取消</button><button id="setSave" class="primary">儲存設定</button>`);$('setClose').onclick=closeModal;$('setSave').onclick=()=>{state.meta.taiwanHolidays=$('taiwanHolidayToggle').checked;saveLocal();renderAll();closeModal()}}
 function showCloud(){openModal('Railway 雲端同步',`<div class="panel-note">目前使用 Railway PostgreSQL。登入時自動下載最新資料；管理員每次儲存修改後會自動上傳。也可在此手動同步。</div><div class="toolbar-row"><button id="cloudUpload" class="primary admin-only">↑ 立即上傳</button><button id="cloudDownload" class="secondary">↓ 重新下載</button></div><div id="cloudStatus"></div>`,`<button id="cloudClose" class="secondary">關閉</button>`);$('cloudClose').onclick=closeModal;if(state.mode==='guest')$('cloudUpload')?.classList.add('hidden');$('cloudUpload')?.addEventListener('click',async()=>{try{$('cloudStatus').textContent='上傳中…';await pushCloudState(false);$('cloudStatus').textContent='✅ 已完成 PostgreSQL 上傳'}catch(e){$('cloudStatus').textContent='❌ '+e.message}});$('cloudDownload').onclick=async()=>{try{$('cloudStatus').textContent='下載中…';await pullCloudState();renderAll();$('cloudStatus').textContent='✅ 已下載最新雲端資料'}catch(e){$('cloudStatus').textContent='❌ '+e.message}}}
 function showStats(){const m=monthKey(state.month),ev=state.events.filter(e=>e.date.startsWith(m)),counts=ev.map(e=>+e.headcount||0),total=counts.reduce((a,b)=>a+b,0),n=counts.filter(x=>x>0).length,avg=n?Math.round(total/n):0;const byRegion={};ev.forEach(e=>{if(e.region)byRegion[e.region]=(byRegion[e.region]||0)+(+e.headcount||0)});openModal('本月人數統計',`<div class="stat-cards"><div class="stat-card"><span>排程場次</span><br><b>${ev.length}</b></div><div class="stat-card"><span>簽到總人數</span><br><b>${total}</b></div><div class="stat-card"><span>有填人數場次平均</span><br><b>${avg}</b></div></div><h3>各區合計</h3><table class="history-table"><tr><th>區域</th><th>人數</th></tr>${Object.entries(byRegion).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')}</table>`,`<button id="statsClose" class="primary">關閉</button>`);$('statsClose').onclick=closeModal}
 function showHistory(){const ref=state.reference||{};const courseRows=(ref.courseCatalog||[]).map(c=>`<tr><td>${esc(c.category||c.name)}</td><td>${esc(c.name||'')}</td><td>${esc(c.frequency||'')}</td><td>${esc((c.recommendedLecturers||[]).join('、'))}</td><td>${esc((c.allowedLecturers||[]).join('、'))}</td></tr>`).join('');openModal('排程資料庫 / 歷史參考',`<div class="panel-note"><b>已整合「課程行事曆安排(1).xlsx」</b><br>講師 ${(ref.lecturers||[]).length} 人、主持人 ${(ref.hosts||[]).length} 人，並將說明會資格、支援區域、年資、課程頻率與推薦講師納入排程提示。</div><h3>課程規則與推薦</h3><div style="overflow:auto;max-height:38vh"><table class="history-table"><tr><th>類別</th><th>課程</th><th>頻率</th><th>推薦講師</th><th>可安排講師</th></tr>${courseRows}</table></div><h3>課程名稱更新</h3><table class="history-table"><tr><th>原名稱</th><th>更新名稱</th></tr>${(ref.courseNameUpdates||[]).filter(x=>x.new).map(x=>`<tr><td>${esc(x.old)}</td><td>${esc(x.new)}</td></tr>`).join('')}</table><h3>既有歷史摘要</h3><table class="history-table"><tr><th>月份</th><th>摘要</th></tr>${state.history.map(h=>`<tr><td>${esc(h.month)}</td><td>${esc(h.note)}</td></tr>`).join('')}</table>`,`<button id="histClose" class="primary">關閉</button>`);$('histClose').onclick=closeModal}
@@ -476,7 +508,7 @@ function audioTitle(){const m=state.audioState.meta,y=state.audioMonth.getFullYe
 function audioPerson(id){return state.audioState.staff.find(x=>x.id===id)}
 function audioEntries(date,region=null){return state.audioState.schedule.filter(x=>x.date===date&&(region===null||x.region===region))}
 function audioCellStyle(e){return `font-size:${+e.size||16}px;color:${esc(e.color||'#111111')};text-align:${e.align||'center'};font-weight:${e.bold?'800':'400'};font-style:${e.italic?'italic':'normal'};text-decoration:${e.underline?'underline':'none'}`}
-function renderAudioEntry(e,prefixRegion=false){const person=audioPerson(e.personId);const text=e.text||person?.name||'';const label=prefixRegion&&e.region&&e.region!=='全區'?`${e.region}-${text}`:text;return `<div class="dj-entry ${e.kind==='special'?'special':''}" data-audio-id="${esc(e.id)}" style="${audioCellStyle(e)}">${esc(label)}</div>`}
+function renderAudioEntry(e,prefixRegion=false){const person=audioPerson(e.personId);const text=e.text||person?.name||'';const label=prefixRegion&&e.region&&e.region!=='全區'?`${e.region}-${text}`:text;return `<div class="dj-entry ${e.kind==='special'?'special':''} ${e.systemHoliday?'system-holiday':''}" ${e.systemHoliday?'':`data-audio-id="${esc(e.id)}"`} style="${audioCellStyle(e)}">${esc(label)}</div>`}
 function djCell(date,region,html=''){const editable=['admin','dj'].includes(state.mode);return `<td class="dj-cell ${editable?'editable':''}" data-date="${esc(date||'')}" data-region="${esc(region||'')}">${html}</td>`}
 function renderAudioSheet(){
   ensureAudioState();const y=state.audioMonth.getFullYear(),m=state.audioMonth.getMonth(),meta=state.audioState.meta;
@@ -497,7 +529,8 @@ function renderAudioSheet(){
     for(let di=0;di<7;di++){
       const day=cursor+di,dt=new Date(y,m,day),inMonth=dt.getMonth()===m,date=inMonth?ymd(dt):'';
       if(!inMonth){html+=`<td colspan="${spans[di]}"></td>`;continue}
-      const specials=audioEntries(date,null).filter(e=>e.kind==='special');
+      let specials=audioEntries(date,null).filter(e=>e.kind==='special');
+      if(!specials.length){const hn=taiwanHolidayName(date);if(hn)specials=[{id:'',date,region:'全區',personId:'',text:hn,size:16,color:meta.weekendText||'#c71920',align:'center',bold:true,italic:false,underline:false,note:'',kind:'special',systemHoliday:true}]}
       if(specials.length){html+=`<td colspan="${spans[di]}" class="dj-cell editable" data-date="${date}" data-region="全區">${specials.map(e=>renderAudioEntry(e,false)).join('')}</td>`;continue}
       if(di<5){
         const regions=DJ_WEEKDAY_REGIONS[di+1]||[];regions.forEach(r=>{const es=audioEntries(date,r);html+=djCell(date,r,es.map(e=>renderAudioEntry(e,false)).join(''))});
