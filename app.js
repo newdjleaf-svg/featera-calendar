@@ -978,8 +978,44 @@ async function saveAudioEntry(id){
   if(!obj.date)return alert('請選擇日期');if(kind!=='special'&&!obj.region)return alert('請選擇地區');if(kind!=='special'&&!obj.personId)return alert('請選擇音控人員');if(!obj.text){const p=audioPerson(obj.personId);obj.text=p?.name||''}if(kind!=='special'&&audioConflict(obj))return alert('此音控人員當日同區已擔任主持人，依規則不可排為音控。');
   const idx=state.audioState.schedule.findIndex(x=>x.id===obj.id);if(idx>=0)state.audioState.schedule[idx]=obj;else state.audioState.schedule.push(obj);await pushAudioState(false);closeModal();renderAudioSheet();
 }
+function syncAudioPersonName(personId,oldName,newName){
+  if(!personId||!newName||oldName===newName)return;
+  state.audioState.schedule.forEach(e=>{
+    if(e.personId!==personId)return;
+    // 一般音控排程顯示文字預設就是姓名；更名時同步更新。若曾手動自訂成其他內容則保留。
+    if(!e.text||e.text===oldName)e.text=newName;
+    if(Array.isArray(e.segments)){
+      e.segments=e.segments.map(seg=>{
+        if(!seg||typeof seg!=='object')return seg;
+        return seg.text===oldName?{...seg,text:newName}:seg;
+      });
+    }
+  });
+}
 function showAudioPeople(){
-  ensureAudioState();let filter='全部';const draw=()=>{const list=filter==='全部'?state.audioState.staff:state.audioState.staff.filter(p=>p.regions?.includes(filter));$('modalBody').innerHTML=`<div class="toolbar-row"><label class="field"><span>地區篩選</span><select id="djPFilter"><option>全部</option>${DJ_REGIONS.map(r=>`<option ${r===filter?'selected':''}>${r}</option>`).join('')}</select></label><button id="djPAdd" class="dj-primary">＋ 新增音控人員</button></div><table class="staff-table"><thead><tr><th>姓名</th><th>地區（可多區，以逗號分隔）</th><th>備註</th><th></th></tr></thead><tbody>${list.map(p=>`<tr data-id="${esc(p.id)}"><td><input class="djp-name" value="${esc(p.name)}"></td><td><input class="djp-regions" value="${esc((p.regions||[]).join('、'))}"></td><td><input class="djp-note" value="${esc(p.note||'')}"></td><td><button class="danger mini djp-del">刪</button></td></tr>`).join('')}</tbody></table>`;$('djPFilter').onchange=e=>{saveVisible();filter=e.target.value;draw()};$('djPAdd').onclick=()=>{saveVisible();state.audioState.staff.push({id:uid('djp'),name:'新音控',regions:filter==='全部'?[]:[filter],note:''});draw()};document.querySelectorAll('.djp-del').forEach(b=>b.onclick=()=>{state.audioState.staff=state.audioState.staff.filter(x=>x.id!==b.closest('tr').dataset.id);draw()})};const saveVisible=()=>{document.querySelectorAll('#modalBody tbody tr').forEach(tr=>{const p=state.audioState.staff.find(x=>x.id===tr.dataset.id);if(!p)return;p.name=tr.querySelector('.djp-name').value.trim();p.regions=tr.querySelector('.djp-regions').value.split(/[、,，]/).map(x=>x.trim()).filter(Boolean);p.note=tr.querySelector('.djp-note').value})};openModal('音控名單管理','',`<button id="djPCancel" class="secondary">取消</button><button id="djPSave" class="dj-primary">儲存並上傳</button>`);draw();$('djPCancel').onclick=closeModal;$('djPSave').onclick=async()=>{saveVisible();await pushAudioState(false);closeModal();renderAudioSheet()}
+  ensureAudioState();let filter='全部';
+  const saveVisible=()=>{
+    document.querySelectorAll('#modalBody tbody tr').forEach(tr=>{
+      const p=state.audioState.staff.find(x=>x.id===tr.dataset.id);if(!p)return;
+      const oldName=p.name||'';
+      const newName=tr.querySelector('.djp-name').value.trim();
+      p.name=newName;
+      p.regions=tr.querySelector('.djp-regions').value.split(/[、,，]/).map(x=>x.trim()).filter(Boolean);
+      p.note=tr.querySelector('.djp-note').value;
+      syncAudioPersonName(p.id,oldName,newName);
+    });
+  };
+  const draw=()=>{
+    const list=filter==='全部'?state.audioState.staff:state.audioState.staff.filter(p=>p.regions?.includes(filter));
+    $('modalBody').innerHTML=`<div class="toolbar-row"><label class="field"><span>地區篩選</span><select id="djPFilter"><option>全部</option>${DJ_REGIONS.map(r=>`<option ${r===filter?'selected':''}>${r}</option>`).join('')}</select></label><button id="djPAdd" class="dj-primary">＋ 新增音控人員</button></div><div class="small-note panel-note">修改姓名後按「儲存並上傳」，已排定的音控行事曆會依 personId 自動同步姓名，不需重新輸入。</div><table class="staff-table"><thead><tr><th>姓名</th><th>地區（可多區，以逗號分隔）</th><th>備註</th><th></th></tr></thead><tbody>${list.map(p=>`<tr data-id="${esc(p.id)}"><td><input class="djp-name" value="${esc(p.name)}"></td><td><input class="djp-regions" value="${esc((p.regions||[]).join('、'))}"></td><td><input class="djp-note" value="${esc(p.note||'')}"></td><td><button class="danger mini djp-del">刪</button></td></tr>`).join('')}</tbody></table>`;
+    $('djPFilter').onchange=e=>{saveVisible();filter=e.target.value;draw()};
+    $('djPAdd').onclick=()=>{saveVisible();state.audioState.staff.push({id:uid('djp'),name:'新音控',regions:filter==='全部'?[]:[filter],note:''});draw()};
+    document.querySelectorAll('.djp-del').forEach(b=>b.onclick=()=>{state.audioState.staff=state.audioState.staff.filter(x=>x.id!==b.closest('tr').dataset.id);draw()});
+  };
+  openModal('音控名單管理','',`<button id="djPCancel" class="secondary">取消</button><button id="djPSave" class="dj-primary">儲存並上傳</button>`);
+  draw();
+  $('djPCancel').onclick=closeModal;
+  $('djPSave').onclick=async()=>{saveVisible();await pushAudioState(false);closeModal();renderAudioSheet()};
 }
 function showAudioLayout(){const m=state.audioState.meta;openModal('音控表版面設定',`<div class="form-grid"><label class="field span2"><span>大標題格式</span><input id="djlTitle" value="${esc(m.titleTemplate)}"><small>可使用 {Y}、{M}</small></label><label class="field"><span>分公司欄文字</span><input id="djlBranch" value="${esc(m.branchLabel)}"></label><label class="field"><span>日期欄文字</span><input id="djlDate" value="${esc(m.dateLabel)}"></label><label class="field"><span>音控欄文字</span><input id="djlAudio" value="${esc(m.audioLabel)}"></label><label class="field"><span>回饋日欄文字</span><input id="djlFeedback" value="${esc(m.feedbackLabel)}"></label><label class="field span2"><span>星期文字（逗號分隔 7 個）</span><input id="djlWeekdays" value="${esc((m.weekdayLabels||['星期一','星期二','星期三','星期四','星期五','星期六','星期日']).join('、'))}"></label><label class="field"><span>標題顏色</span><input id="djlTitleColor" type="color" value="${esc(m.titleColor)}"></label><label class="field"><span>星期背景</span><input id="djlWeekBg" type="color" value="${esc(m.weekdayBg)}"></label><label class="field"><span>星期文字</span><input id="djlWeekText" type="color" value="${esc(m.weekdayText)}"></label><label class="field"><span>週末文字</span><input id="djlWeekend" type="color" value="${esc(m.weekendText)}"></label><label class="field"><span>日期背景</span><input id="djlDateBg" type="color" value="${esc(m.dateBg)}"></label><label class="field"><span>音控背景</span><input id="djlAudioBg" type="color" value="${esc(m.audioBg)}"></label><label class="field"><span>格線顏色</span><input id="djlGrid" type="color" value="${esc(m.gridColor)}"></label><div class="span2 toolbar-row"><button id="djlLogo" class="secondary">使用目前行事曆 Logo</button></div></div>`,`<button id="djlCancel" class="secondary">取消</button><button id="djlSave" class="dj-primary">儲存並上傳</button>`);$('djlCancel').onclick=closeModal;$('djlLogo').onclick=()=>{m.logo=state.meta.logo||'';alert('已套用目前行事曆 Logo，按儲存後上傳。')};$('djlSave').onclick=async()=>{m.titleTemplate=$('djlTitle').value;m.branchLabel=$('djlBranch').value;m.dateLabel=$('djlDate').value;m.audioLabel=$('djlAudio').value;m.feedbackLabel=$('djlFeedback').value;m.weekdayLabels=$('djlWeekdays').value.split(/[、,，]/).map(x=>x.trim()).filter(Boolean).slice(0,7);m.titleColor=$('djlTitleColor').value;m.weekdayBg=$('djlWeekBg').value;m.weekdayText=$('djlWeekText').value;m.weekendText=$('djlWeekend').value;m.dateBg=$('djlDateBg').value;m.audioBg=$('djlAudioBg').value;m.gridColor=$('djlGrid').value;await pushAudioState(false);closeModal();renderAudioSheet()}}
 async function makeAudioCanvas(){document.body.classList.add('exporting-audio');await new Promise(r=>setTimeout(r,80));const sheet=$('djSheet');const canvas=await html2canvas(sheet,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,width:sheet.scrollWidth,height:sheet.scrollHeight});document.body.classList.remove('exporting-audio');return canvas}
