@@ -151,13 +151,14 @@ async function loadSeed(){
 }
 function mergeReferenceIntoStaff(){
   const merge=(list,refs)=>{for(const p of list){const r=(refs||[]).find(x=>x.name===p.name);if(!r)continue;for(const k of ['seminarQualified','regions','seniority'])if((p[k]===undefined||p[k]===null||p[k]===''||(Array.isArray(p[k])&&!p[k].length))&&r[k]!==undefined)p[k]=clone(r[k]);if(!p.note&&r.note)p.note=r.note;if(p.stars===undefined&&r.stars!==undefined)p.stars=r.stars;if(!p.rank&&r.rank)p.rank=r.rank;}for(const r of (refs||[])){if(!list.some(x=>x.name===r.name))list.push(clone(r))}};
-  merge(state.staff.lecturers,state.reference?.lecturers);merge(state.staff.hosts,state.reference?.hosts);
+  merge(state.staff.lecturers,state.reference?.lecturers);merge(state.staff.hosts,state.reference?.hosts);ensureSpecialStaffTitles();
 }
 function eventCourseText(e){return (e.lines||[]).map(x=>x.text||'').join(' ')}
 function nameMatch(list,name){return (list||[]).some(x=>{const n=String(x).replace(/\(.*?\)/g,'').replace(/^(圓夢計畫-)/,'').trim();return n&&name.includes(n)})}
 async function initialize(){
   await loadSeed();
   try{const saved=JSON.parse(localStorage.getItem(LS_KEY)||'null');if(saved)Object.assign(state,saved)}catch{}
+  ensureSpecialStaffTitles();
   bind(); renderAll();
 }
 function bind(){
@@ -418,9 +419,9 @@ function generatedBlankCellLines(){
   const lines=[];
   const first=[region,course||type].filter(Boolean).join('-');
   if(first){const segs=[];if(region)segs.push({text:region+(course||type?'-':''),color:'#111111',bold:true,italic:false,underline:false});if(course||type)segs.push({text:course||type,color:'#111111',bold:true,italic:false,underline:false});lines.push({text:first,size:16,color:'#111111',align:'left',bold:true,italic:false,underline:false,segments:segs.length>1?segs:undefined})}
-  if(host)lines.push({text:`主持：${host.name}${host.rank?' '+rankWithZh(host.rank):''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
+  if(host)lines.push({text:`主持：${host.name}${hostDisplayTitle(host)?' '+hostDisplayTitle(host):''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
   else if(hostName)lines.push({text:`主持：${hostName}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
-  if(lec)lines.push({text:`講師：${lec.name}${lec.stars?' '+['','一星','二星','三星'][lec.stars]+'講師':''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
+  if(lec)lines.push({text:`講師：${lec.name}${lecturerDisplayTitle(lec)?' '+lecturerDisplayTitle(lec):''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
   else if(lecName)lines.push({text:`講師：${lecName}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
   return lines;
 }
@@ -467,9 +468,9 @@ function generatedEventLines(){
   const lines=[];
   const first=[region,course||type].filter(Boolean).join('-');
   if(first){const segs=[];if(region)segs.push({text:region+(course||type?'-':''),color:'#111111',bold:true,italic:false,underline:false});if(course||type)segs.push({text:course||type,color:'#111111',bold:true,italic:false,underline:false});lines.push({text:first,size:16,color:'#111111',align:'left',bold:true,italic:false,underline:false,segments:segs.length>1?segs:undefined})}
-  if(host)lines.push({text:`主持：${host.name}${host.rank?' '+rankWithZh(host.rank):''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
+  if(host)lines.push({text:`主持：${host.name}${hostDisplayTitle(host)?' '+hostDisplayTitle(host):''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
   else if($('evHostName').value.trim())lines.push({text:`主持：${$('evHostName').value.trim()}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
-  if(lec)lines.push({text:`講師：${lec.name}${lec.stars?' '+['','一星','二星','三星'][lec.stars]+'講師':''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
+  if(lec)lines.push({text:`講師：${lec.name}${lecturerDisplayTitle(lec)?' '+lecturerDisplayTitle(lec):''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
   else if($('evLecturerName').value.trim())lines.push({text:`講師：${$('evLecturerName').value.trim()}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
   return lines;
 }
@@ -556,14 +557,30 @@ function validate3Months(){
 }
 function dedupeWarnings(w){const s=new Set();return w.filter(x=>{const k=x.title+x.text;if(s.has(k))return false;s.add(k);return true})}
 
+function personCustomTitle(person){return String(person?.customTitle||'').trim()}
+function lecturerDisplayTitle(person){
+  const custom=personCustomTitle(person);if(custom)return custom;
+  const stars=Number(person?.stars)||0;
+  return stars?`${['','一星','二星','三星'][stars]}講師`:'';
+}
+function hostDisplayTitle(person){
+  const custom=personCustomTitle(person);if(custom)return custom;
+  return person?.rank?rankWithZh(person.rank):'';
+}
 function staffAutoDisplay(person,kind){
+  const custom=personCustomTitle(person);
   const rank=person?.rank?`${person.rank}${RANK_ZH[person.rank]||''}`:'';
   if(kind==='lecturers'){
     const stars=Number(person?.stars)||0;
     const starText=stars?`${['','一星','二星','三星'][stars]}講師`:'';
-    return [starText,rank].filter(Boolean).join('｜');
+    return custom||[starText,rank].filter(Boolean).join('｜');
   }
-  return rank;
+  return custom||rank;
+}
+function ensureSpecialStaffTitles(){
+  const list=state.staff?.lecturers||[];
+  const huang=list.find(p=>p.name==='黃致堯');if(huang&&!personCustomTitle(huang))huang.customTitle='總經理';
+  const wen=list.find(p=>p.name==='文林生');if(wen&&!personCustomTitle(wen)){wen.customTitle='藥師';wen.special=true}
 }
 function syncPersonDisplayLine(line,prefix,text){
   if(!line||!String(line.text||'').startsWith(prefix))return false;
@@ -579,14 +596,14 @@ function syncScheduledPersonText(beforeById={}){
     if(e.hostId){
       const p=state.staff.hosts.find(x=>x.id===e.hostId);
       if(p){
-        const text=`主持：${p.name}${p.rank?' '+rankWithZh(p.rank):''}`;
+        const text=`主持：${p.name}${hostDisplayTitle(p)?' '+hostDisplayTitle(p):''}`;
         (e.lines||[]).forEach(l=>syncPersonDisplayLine(l,'主持：',text));
       }
     }
     if(e.lecturerId){
       const p=state.staff.lecturers.find(x=>x.id===e.lecturerId);
       if(p){
-        const text=`講師：${p.name}${p.stars?' '+['','一星','二星','三星'][p.stars]+'講師':''}`;
+        const text=`講師：${p.name}${lecturerDisplayTitle(p)?' '+lecturerDisplayTitle(p):''}`;
         (e.lines||[]).forEach(l=>syncPersonDisplayLine(l,'講師：',text));
       }
     }
@@ -597,14 +614,14 @@ function syncScheduledPersonText(beforeById={}){
     if(host){
       const old=beforeById[host.id];
       if(old&&cell.hostName===old.name)cell.hostName=host.name;
-      const text=`主持：${host.name}${host.rank?' '+rankWithZh(host.rank):''}`;
+      const text=`主持：${host.name}${hostDisplayTitle(host)?' '+hostDisplayTitle(host):''}`;
       (cell.lines||[]).forEach(l=>syncPersonDisplayLine(l,'主持：',text));
     }
     const lec=state.staff.lecturers.find(p=>p.name===cell.lecturerName)||state.staff.lecturers.find(p=>beforeById[p.id]?.name===cell.lecturerName);
     if(lec){
       const old=beforeById[lec.id];
       if(old&&cell.lecturerName===old.name)cell.lecturerName=lec.name;
-      const text=`講師：${lec.name}${lec.stars?' '+['','一星','二星','三星'][lec.stars]+'講師':''}`;
+      const text=`講師：${lec.name}${lecturerDisplayTitle(lec)?' '+lecturerDisplayTitle(lec):''}`;
       (cell.lines||[]).forEach(l=>syncPersonDisplayLine(l,'講師：',text));
     }
   }
@@ -620,23 +637,25 @@ function showStaff(){
       const rank=tr.querySelector('.s-rank');if(rank)p.rank=rank.value;
       const stars=tr.querySelector('.s-stars');if(stars)p.stars=+stars.value;
       const special=tr.querySelector('.s-special');if(special)p.special=special.checked;
+      const title=tr.querySelector('.s-title');if(title)p.customTitle=title.value.trim();
     });
   };
   const rankOptions=p=>`<option value="">—</option>${RANKS.map(r=>`<option value="${r}" ${p.rank===r?'selected':''}>${r}</option>`).join('')}`;
   const draw=()=>{
     const list=state.staff[active],isL=active==='lecturers',isH=active==='hosts';
     $('modalBody').innerHTML=`<div class="tabs"><button class="tab ${isL?'active':''}" data-tab="lecturers">講師</button><button class="tab ${isH?'active':''}" data-tab="hosts">主持人</button></div>
-      <div class="panel-note">修改星級或聘級會立即更新右側「自動顯示」。按儲存後，已排定行事曆中的主持人聘級與講師星級文字也會同步更新。</div>
+      <div class="panel-note">修改星級、聘級或自訂頭銜會立即更新右側「自動顯示」。自訂頭銜有填寫時會優先顯示；按儲存後，已排定行事曆中的主持人／講師文字也會同步更新。黃致堯預設為「總經理」，文林生預設為「藥師」。</div>
       <div class="toolbar-row"><button id="addStaff" class="primary">＋ 新增人員</button></div>
-      <div style="overflow:auto;max-height:65vh"><table class="staff-table"><thead><tr><th>姓名</th>${isL?'<th>星級</th><th>聘級</th>':'<th>聘級</th>'}<th>自動顯示</th>${isL?'<th>特聘/顧問</th>':''}<th>備註</th><th></th></tr></thead><tbody>
-      ${list.map(p=>`<tr data-id="${p.id}"><td><input class="s-name" value="${esc(p.name)}"></td>${isL?`<td><select class="s-stars">${[0,1,2,3].map(n=>`<option value="${n}" ${p.stars==n?'selected':''}>${n?`${n}星`:'無'}</option>`).join('')}</select></td><td><select class="s-rank">${rankOptions(p)}</select></td>`:`<td><select class="s-rank">${rankOptions(p)}</select></td>`}<td><input class="s-auto-display" value="${esc(staffAutoDisplay(p,active))}" readonly></td>${isL?`<td><input class="s-special" type="checkbox" ${p.special?'checked':''}></td>`:''}<td><input class="s-note" value="${esc(p.note||'')}" title="${esc([p.seminarQualified?'說明會資格V':'',p.regions?.length?'支援:'+p.regions.join('、'):'',p.seniority||''].filter(Boolean).join('｜'))}"><div style="font-size:11px;color:#666;margin-top:3px">${esc([p.seminarQualified?'說明會V':'',p.regions?.length?p.regions.join('、'):'',p.seniority||''].filter(Boolean).join('｜'))}</div></td><td><button class="danger mini s-del">刪</button></td></tr>`).join('')}
+      <div style="overflow:auto;max-height:65vh"><table class="staff-table"><thead><tr><th>姓名</th>${isL?'<th>星級</th><th>聘級</th>':'<th>聘級</th>'}<th>自訂頭銜</th><th>自動顯示</th>${isL?'<th>特聘/顧問</th>':''}<th>備註</th><th></th></tr></thead><tbody>
+      ${list.map(p=>`<tr data-id="${p.id}"><td><input class="s-name" value="${esc(p.name)}"></td>${isL?`<td><select class="s-stars">${[0,1,2,3].map(n=>`<option value="${n}" ${p.stars==n?'selected':''}>${n?`${n}星`:'無'}</option>`).join('')}</select></td><td><select class="s-rank">${rankOptions(p)}</select></td>`:`<td><select class="s-rank">${rankOptions(p)}</select></td>`}<td><input class="s-title" value="${esc(p.customTitle||'')}" placeholder="例如：總經理／藥師／顧問"></td><td><input class="s-auto-display" value="${esc(staffAutoDisplay(p,active))}" readonly></td>${isL?`<td><input class="s-special" type="checkbox" ${p.special?'checked':''}></td>`:''}<td><input class="s-note" value="${esc(p.note||'')}" title="${esc([p.seminarQualified?'說明會資格V':'',p.regions?.length?'支援:'+p.regions.join('、'):'',p.seniority||''].filter(Boolean).join('｜'))}"><div style="font-size:11px;color:#666;margin-top:3px">${esc([p.seminarQualified?'說明會V':'',p.regions?.length?p.regions.join('、'):'',p.seniority||''].filter(Boolean).join('｜'))}</div></td><td><button class="danger mini s-del">刪</button></td></tr>`).join('')}
       </tbody></table></div>`;
     document.querySelectorAll('#modalBody .tab').forEach(b=>b.onclick=()=>{commitVisible();active=b.dataset.tab;draw()});
-    $('addStaff').onclick=()=>{commitVisible();const obj={id:uid(active[0]),name:'新成員',note:''};if(active==='lecturers')Object.assign(obj,{stars:1,rank:'',special:false});else Object.assign(obj,{rank:'SM',stars:0});state.staff[active].push(obj);draw()};
+    $('addStaff').onclick=()=>{commitVisible();const obj={id:uid(active[0]),name:'新成員',note:''};if(active==='lecturers')Object.assign(obj,{stars:1,rank:'',special:false,customTitle:''});else Object.assign(obj,{rank:'SM',stars:0,customTitle:''});state.staff[active].push(obj);draw()};
     document.querySelectorAll('#modalBody .staff-table tbody tr').forEach(tr=>{
-      const refresh=()=>{const p={rank:tr.querySelector('.s-rank')?.value||'',stars:+(tr.querySelector('.s-stars')?.value||0)};tr.querySelector('.s-auto-display').value=staffAutoDisplay(p,active)};
+      const refresh=()=>{const p={rank:tr.querySelector('.s-rank')?.value||'',stars:+(tr.querySelector('.s-stars')?.value||0),customTitle:tr.querySelector('.s-title')?.value||''};tr.querySelector('.s-auto-display').value=staffAutoDisplay(p,active)};
       tr.querySelector('.s-rank')?.addEventListener('change',refresh);
       tr.querySelector('.s-stars')?.addEventListener('change',refresh);
+      tr.querySelector('.s-title')?.addEventListener('input',refresh);
       tr.querySelector('.s-del').onclick=()=>{if(!confirm('確定刪除此人員？'))return;commitVisible();state.staff[active]=state.staff[active].filter(x=>x.id!==tr.dataset.id);draw()};
     });
   };
@@ -655,7 +674,7 @@ function showStaff(){
       saveLocal();renderAll();
       if(cloudReady&&state.mode==='admin')await pushCloudState(false);
       closeModal();
-      alert('講師／主持人資料已儲存，已排定行事曆文字也已同步更新。');
+      alert('講師／主持人資料與自訂頭銜已儲存，已排定行事曆文字也已同步更新。');
     }catch(err){alert('儲存失敗：'+err.message);btn.disabled=false;btn.textContent='儲存並同步'}
   };
 }
