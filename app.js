@@ -556,7 +556,109 @@ function validate3Months(){
 }
 function dedupeWarnings(w){const s=new Set();return w.filter(x=>{const k=x.title+x.text;if(s.has(k))return false;s.add(k);return true})}
 
-function showStaff(){let active='lecturers';const draw=()=>{const list=state.staff[active],isL=active==='lecturers',isH=active==='hosts';$('modalBody').innerHTML=`<div class="tabs"><button class="tab ${active==='lecturers'?'active':''}" data-tab="lecturers">講師</button><button class="tab ${active==='hosts'?'active':''}" data-tab="hosts">主持人</button></div><div class="toolbar-row"><button id="addStaff" class="primary">＋ 新增人員</button></div><table class="staff-table"><thead><tr><th>姓名</th>${isL?'<th>星級</th><th>聘級</th><th>特聘/顧問</th>':isH?'<th>聘級</th>':''}<th>備註</th><th></th></tr></thead><tbody>${list.map(p=>`<tr data-id="${p.id}"><td><input class="s-name" value="${esc(p.name)}"></td>${isL?`<td><select class="s-stars">${[0,1,2,3].map(n=>`<option value="${n}" ${p.stars==n?'selected':''}>${n?`${n}星`:'無'}</option>`).join('')}</select></td><td><select class="s-rank"><option value="">—</option>${RANKS.map(r=>`<option ${p.rank===r?'selected':''}>${r}</option>`).join('')}</select></td><td><input class="s-special" type="checkbox" ${p.special?'checked':''}></td>`:isH?`<td><select class="s-rank"><option value="">—</option>${RANKS.map(r=>`<option ${p.rank===r?'selected':''}>${r}</option>`).join('')}</select></td>`:''}<td><input class="s-note" value="${esc(p.note||'')}" title="${esc([p.seminarQualified?'說明會資格V':'',p.regions?.length?'支援:'+p.regions.join('、'):'',p.seniority||''].filter(Boolean).join('｜'))}"><div style="font-size:11px;color:#666;margin-top:3px">${esc([p.seminarQualified?'說明會V':'',p.regions?.length?p.regions.join('、'):'',p.seniority||''].filter(Boolean).join('｜'))}</div></td><td><button class="danger mini s-del">刪</button></td></tr>`).join('')}</tbody></table>`;document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{active=b.dataset.tab;draw()});$('addStaff').onclick=()=>{const obj={id:uid(active[0]),name:'新成員',note:''};if(active==='lecturers')Object.assign(obj,{stars:1,rank:'',special:false});if(active==='hosts')Object.assign(obj,{rank:'SM',stars:0});state.staff[active].push(obj);draw()};document.querySelectorAll('tbody tr').forEach(tr=>{tr.querySelector('.s-del').onclick=()=>{state.staff[active]=state.staff[active].filter(x=>x.id!==tr.dataset.id);draw()}})};openModal('講師 / 主持人名單','',`<button id="staffCancel" class="secondary">取消</button><button id="staffSave" class="primary">儲存</button>`);draw();$('staffCancel').onclick=closeModal;$('staffSave').onclick=()=>{document.querySelectorAll('tbody tr').forEach(tr=>{const p=state.staff[active].find(x=>x.id===tr.dataset.id);if(!p)return;p.name=tr.querySelector('.s-name').value;p.note=tr.querySelector('.s-note').value;if(tr.querySelector('.s-rank'))p.rank=tr.querySelector('.s-rank').value;if(tr.querySelector('.s-stars'))p.stars=+tr.querySelector('.s-stars').value;if(tr.querySelector('.s-special'))p.special=tr.querySelector('.s-special').checked});saveLocal();closeModal();renderAll()}}
+function staffAutoDisplay(person,kind){
+  const rank=person?.rank?`${person.rank}${RANK_ZH[person.rank]||''}`:'';
+  if(kind==='lecturers'){
+    const stars=Number(person?.stars)||0;
+    const starText=stars?`${['','一星','二星','三星'][stars]}講師`:'';
+    return [starText,rank].filter(Boolean).join('｜');
+  }
+  return rank;
+}
+function syncPersonDisplayLine(line,prefix,text){
+  if(!line||!String(line.text||'').startsWith(prefix))return false;
+  line.text=text;
+  if(Array.isArray(line.segments)&&line.segments.length){
+    const first=line.segments[0]||{color:line.color||'#555555',bold:line.bold,italic:line.italic,underline:line.underline};
+    line.segments=[{...first,text}];
+  }
+  return true;
+}
+function syncScheduledPersonText(beforeById={}){
+  for(const e of state.events){
+    if(e.hostId){
+      const p=state.staff.hosts.find(x=>x.id===e.hostId);
+      if(p){
+        const text=`主持：${p.name}${p.rank?' '+rankWithZh(p.rank):''}`;
+        (e.lines||[]).forEach(l=>syncPersonDisplayLine(l,'主持：',text));
+      }
+    }
+    if(e.lecturerId){
+      const p=state.staff.lecturers.find(x=>x.id===e.lecturerId);
+      if(p){
+        const text=`講師：${p.name}${p.stars?' '+['','一星','二星','三星'][p.stars]+'講師':''}`;
+        (e.lines||[]).forEach(l=>syncPersonDisplayLine(l,'講師：',text));
+      }
+    }
+  }
+  // 跨月空白格沒有 personId，因此用修改前姓名對照同步既有文字。
+  for(const cell of Object.values(state.blankCells||{})){
+    const host=state.staff.hosts.find(p=>p.name===cell.hostName)||state.staff.hosts.find(p=>beforeById[p.id]?.name===cell.hostName);
+    if(host){
+      const old=beforeById[host.id];
+      if(old&&cell.hostName===old.name)cell.hostName=host.name;
+      const text=`主持：${host.name}${host.rank?' '+rankWithZh(host.rank):''}`;
+      (cell.lines||[]).forEach(l=>syncPersonDisplayLine(l,'主持：',text));
+    }
+    const lec=state.staff.lecturers.find(p=>p.name===cell.lecturerName)||state.staff.lecturers.find(p=>beforeById[p.id]?.name===cell.lecturerName);
+    if(lec){
+      const old=beforeById[lec.id];
+      if(old&&cell.lecturerName===old.name)cell.lecturerName=lec.name;
+      const text=`講師：${lec.name}${lec.stars?' '+['','一星','二星','三星'][lec.stars]+'講師':''}`;
+      (cell.lines||[]).forEach(l=>syncPersonDisplayLine(l,'講師：',text));
+    }
+  }
+}
+function showStaff(){
+  let active='lecturers';
+  const beforeById=Object.fromEntries([...state.staff.lecturers,...state.staff.hosts].map(p=>[p.id,clone(p)]));
+  const commitVisible=()=>{
+    document.querySelectorAll('#modalBody .staff-table tbody tr').forEach(tr=>{
+      const p=state.staff[active].find(x=>x.id===tr.dataset.id);if(!p)return;
+      p.name=tr.querySelector('.s-name')?.value.trim()||p.name;
+      p.note=tr.querySelector('.s-note')?.value??p.note??'';
+      const rank=tr.querySelector('.s-rank');if(rank)p.rank=rank.value;
+      const stars=tr.querySelector('.s-stars');if(stars)p.stars=+stars.value;
+      const special=tr.querySelector('.s-special');if(special)p.special=special.checked;
+    });
+  };
+  const rankOptions=p=>`<option value="">—</option>${RANKS.map(r=>`<option value="${r}" ${p.rank===r?'selected':''}>${r}</option>`).join('')}`;
+  const draw=()=>{
+    const list=state.staff[active],isL=active==='lecturers',isH=active==='hosts';
+    $('modalBody').innerHTML=`<div class="tabs"><button class="tab ${isL?'active':''}" data-tab="lecturers">講師</button><button class="tab ${isH?'active':''}" data-tab="hosts">主持人</button></div>
+      <div class="panel-note">修改星級或聘級會立即更新右側「自動顯示」。按儲存後，已排定行事曆中的主持人聘級與講師星級文字也會同步更新。</div>
+      <div class="toolbar-row"><button id="addStaff" class="primary">＋ 新增人員</button></div>
+      <div style="overflow:auto;max-height:65vh"><table class="staff-table"><thead><tr><th>姓名</th>${isL?'<th>星級</th><th>聘級</th>':'<th>聘級</th>'}<th>自動顯示</th>${isL?'<th>特聘/顧問</th>':''}<th>備註</th><th></th></tr></thead><tbody>
+      ${list.map(p=>`<tr data-id="${p.id}"><td><input class="s-name" value="${esc(p.name)}"></td>${isL?`<td><select class="s-stars">${[0,1,2,3].map(n=>`<option value="${n}" ${p.stars==n?'selected':''}>${n?`${n}星`:'無'}</option>`).join('')}</select></td><td><select class="s-rank">${rankOptions(p)}</select></td>`:`<td><select class="s-rank">${rankOptions(p)}</select></td>`}<td><input class="s-auto-display" value="${esc(staffAutoDisplay(p,active))}" readonly></td>${isL?`<td><input class="s-special" type="checkbox" ${p.special?'checked':''}></td>`:''}<td><input class="s-note" value="${esc(p.note||'')}" title="${esc([p.seminarQualified?'說明會資格V':'',p.regions?.length?'支援:'+p.regions.join('、'):'',p.seniority||''].filter(Boolean).join('｜'))}"><div style="font-size:11px;color:#666;margin-top:3px">${esc([p.seminarQualified?'說明會V':'',p.regions?.length?p.regions.join('、'):'',p.seniority||''].filter(Boolean).join('｜'))}</div></td><td><button class="danger mini s-del">刪</button></td></tr>`).join('')}
+      </tbody></table></div>`;
+    document.querySelectorAll('#modalBody .tab').forEach(b=>b.onclick=()=>{commitVisible();active=b.dataset.tab;draw()});
+    $('addStaff').onclick=()=>{commitVisible();const obj={id:uid(active[0]),name:'新成員',note:''};if(active==='lecturers')Object.assign(obj,{stars:1,rank:'',special:false});else Object.assign(obj,{rank:'SM',stars:0});state.staff[active].push(obj);draw()};
+    document.querySelectorAll('#modalBody .staff-table tbody tr').forEach(tr=>{
+      const refresh=()=>{const p={rank:tr.querySelector('.s-rank')?.value||'',stars:+(tr.querySelector('.s-stars')?.value||0)};tr.querySelector('.s-auto-display').value=staffAutoDisplay(p,active)};
+      tr.querySelector('.s-rank')?.addEventListener('change',refresh);
+      tr.querySelector('.s-stars')?.addEventListener('change',refresh);
+      tr.querySelector('.s-del').onclick=()=>{if(!confirm('確定刪除此人員？'))return;commitVisible();state.staff[active]=state.staff[active].filter(x=>x.id!==tr.dataset.id);draw()};
+    });
+  };
+  openModal('講師 / 主持人名單','',`<button id="staffCancel" class="secondary">取消</button><button id="staffSave" class="primary">儲存並同步</button>`);
+  draw();
+  $('staffCancel').onclick=()=>{ // 取消時還原這次開啟視窗前的人員資料
+    const restore=(list)=>list.map(p=>beforeById[p.id]?clone(beforeById[p.id]):p).filter(p=>beforeById[p.id]);
+    state.staff.lecturers=restore(state.staff.lecturers);state.staff.hosts=restore(state.staff.hosts);closeModal();
+  };
+  $('staffSave').onclick=async()=>{
+    const btn=$('staffSave');
+    try{
+      btn.disabled=true;btn.textContent='儲存中…';
+      commitVisible();
+      syncScheduledPersonText(beforeById);
+      saveLocal();renderAll();
+      if(cloudReady&&state.mode==='admin')await pushCloudState(false);
+      closeModal();
+      alert('講師／主持人資料已儲存，已排定行事曆文字也已同步更新。');
+    }catch(err){alert('儲存失敗：'+err.message);btn.disabled=false;btn.textContent='儲存並同步'}
+  };
+}
 
 function showAppearance(){
   const a=ensureAppearance(),names=['星期一','星期二','星期三','星期四','星期五','星期六','星期日'];
