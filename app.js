@@ -331,8 +331,40 @@ function rememberLineColor(color){const c=normalizeHexColor(color);state.meta.re
 function colorSwatches(colors,cls){return colors.map(c=>`<button type="button" class="color-swatch ${cls||''}" data-color="${c}" style="background:${c}" title="${c}"></button>`).join('')}
 function lineColorControl(color,scope='line'){const c=normalizeHexColor(color);return `<div class="line-color-control"><button type="button" class="mini ${scope}-color-btn" title="文字顏色"><span class="line-color-chip" style="background:${c}"></span></button><input class="${scope}-color-value" type="hidden" value="${c}"><input class="${scope}-color-native" type="color" value="${c}" tabindex="-1" aria-hidden="true" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px"></div>`}
 let globalColorPopoverCloser=null;
-function closeGlobalColorPopover(){document.getElementById('globalColorPopover')?.remove();if(globalColorPopoverCloser){document.removeEventListener('pointerdown',globalColorPopoverCloser,true);globalColorPopoverCloser=null}}
-function openGlobalColorPopover(control,scope,anchor){closeGlobalColorPopover();const c=normalizeHexColor(control.querySelector(`.${scope}-color-value`)?.value||'#111111'),recent=recentLineColors();const pop=document.createElement('div');pop.id='globalColorPopover';pop.className='line-color-popover global-color-popover';pop.innerHTML=`<div class="color-section"><b>常用色</b><div class="color-swatches">${colorSwatches(COMMON_LINE_COLORS,'common-color')}</div></div><div class="color-section recent-color-section"><b>最近使用</b><div class="color-swatches recent-color-swatches">${recent.length?colorSwatches(recent,'recent-color'):'<span class="empty-recent-color">尚無紀錄</span>'}</div></div><label class="other-color"><span>其他顏色</span><input class="global-color-native" type="color" value="${c}"></label>`;document.body.appendChild(pop);const r=anchor.getBoundingClientRect();const margin=8,w=250;let left=Math.min(Math.max(margin,r.left),window.innerWidth-w-margin);let top=r.bottom+6;if(top+pop.offsetHeight>window.innerHeight-margin)top=Math.max(margin,r.top-pop.offsetHeight-6);pop.style.left=`${left}px`;pop.style.top=`${top}px`;pop.querySelectorAll('.color-swatch').forEach(sw=>sw.onclick=e=>{e.stopPropagation();setScopedColor(control,scope,sw.dataset.color,true);closeGlobalColorPopover()});const native=pop.querySelector('.global-color-native');native.oninput=()=>setScopedColor(control,scope,native.value,true);native.onchange=()=>closeGlobalColorPopover();setTimeout(()=>{globalColorPopoverCloser=e=>{if(!pop.contains(e.target)&&!anchor.contains(e.target))closeGlobalColorPopover()};document.addEventListener('pointerdown',globalColorPopoverCloser,true)},0)}
+function closeGlobalColorPopover(){
+  document.getElementById('globalColorPopoverOverlay')?.remove();
+  document.getElementById('globalColorPopover')?.remove();
+  if(globalColorPopoverCloser){
+    document.removeEventListener('keydown',globalColorPopoverCloser,true);
+    globalColorPopoverCloser=null;
+  }
+}
+function openGlobalColorPopover(control,scope,anchor){
+  if(!control)return;
+  closeGlobalColorPopover();
+  const c=normalizeHexColor(control.querySelector(`.${scope}-color-value`)?.value||'#111111');
+  const recent=recentLineColors();
+  const overlay=document.createElement('div');
+  overlay.id='globalColorPopoverOverlay';
+  overlay.className='global-color-overlay';
+  overlay.innerHTML=`<div id="globalColorPopover" class="global-color-dialog" role="dialog" aria-modal="true" aria-label="選擇文字顏色">
+    <div class="global-color-head"><b>文字顏色</b><button type="button" class="mini global-color-close" aria-label="關閉">✕</button></div>
+    <div class="color-section"><b>常用色</b><div class="color-swatches">${colorSwatches(COMMON_LINE_COLORS,'common-color')}</div></div>
+    <div class="color-section recent-color-section"><b>最近使用</b><div class="color-swatches recent-color-swatches">${recent.length?colorSwatches(recent,'recent-color'):'<span class="empty-recent-color">尚無紀錄</span>'}</div></div>
+    <label class="other-color"><span>其他顏色</span><input class="global-color-native" type="color" value="${c}"></label>
+  </div>`;
+  document.body.appendChild(overlay);
+  const dialog=overlay.querySelector('#globalColorPopover');
+  const apply=color=>{setScopedColor(control,scope,color,true)};
+  dialog.querySelectorAll('.color-swatch').forEach(sw=>sw.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();apply(sw.dataset.color);closeGlobalColorPopover()}));
+  const native=dialog.querySelector('.global-color-native');
+  native.addEventListener('input',()=>apply(native.value));
+  native.addEventListener('change',()=>closeGlobalColorPopover());
+  dialog.querySelector('.global-color-close').addEventListener('click',closeGlobalColorPopover);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)closeGlobalColorPopover()});
+  globalColorPopoverCloser=e=>{if(e.key==='Escape')closeGlobalColorPopover()};
+  document.addEventListener('keydown',globalColorPopoverCloser,true);
+}
 function segmentRow(seg={}){return `<div class="segment-row"><input class="mini segment-text" type="text" value="${esc(seg.text||'')}" placeholder="文字片段">${lineColorControl(seg.color||'#111111','segment')}<button type="button" class="mini style-btn toggle segment-bold ${seg.bold?'active':''}"><b>B</b></button><button type="button" class="mini style-btn toggle segment-italic ${seg.italic?'active':''}"><i>I</i></button><button type="button" class="mini style-btn toggle segment-underline ${seg.underline?'active':''}"><u>U</u></button><button type="button" class="mini danger remove-segment">刪</button></div>`}
 function segmentEditorHtml(l){const segs=Array.isArray(l?.segments)&&l.segments.length?l.segments:[];return `<div class="segment-editor-wrap ${segs.length?'':'hidden'}"><div class="segment-hint">同一行可拆成多個文字片段，各自設定顏色、粗體、斜體、底線。</div><div class="segment-list">${segs.map(segmentRow).join('')}</div><button type="button" class="mini secondary add-segment">＋ 新增文字片段</button></div>`}
 function lineEditorHtml(lines){return (lines||[]).map((l,i)=>lineRow(l,i)).join('')}
@@ -355,7 +387,10 @@ function appendDisplayLine(line,containerId='lineEditors'){
 }
 function syncSegmentedLine(row){const segs=[...row.querySelectorAll('.segment-row')].map(r=>r.querySelector('.segment-text').value);const t=row.querySelector('.line-text');if(t)t.value=segs.join('')}
 function setScopedColor(row,scope,color,remember=true){const c=normalizeHexColor(color),hidden=row.querySelector(`.${scope}-color-value`),native=row.querySelector(`.${scope}-color-native`),chip=row.querySelector('.line-color-chip');if(hidden)hidden.value=c;if(native)native.value=c;if(chip)chip.style.background=c;if(remember){rememberLineColor(c);refreshRecentColorSwatches()}}
-function wireColorControl(control,scope){if(!control)return;const btn=control.querySelector(`.${scope}-color-btn`);if(btn)btn.onclick=e=>{e.preventDefault();e.stopPropagation();openGlobalColorPopover(control,scope,btn)};const native=control.querySelector(`.${scope}-color-native`);if(native)native.oninput=()=>setScopedColor(control,scope,native.value,true)}
+function wireColorControl(control,scope){if(!control)return;control.dataset.colorScope=scope}
+let colorDelegationReady=false;
+function ensureColorDelegation(){if(colorDelegationReady)return;colorDelegationReady=true;document.addEventListener('click',e=>{const btn=e.target.closest?.('.line-color-btn,.segment-color-btn');if(!btn)return;const control=btn.closest('.line-color-control');if(!control)return;e.preventDefault();e.stopPropagation();const scope=btn.classList.contains('segment-color-btn')?'segment':'line';openGlobalColorPopover(control,scope,btn)},true)}
+ensureColorDelegation();
 function wireSegmentRows(lineRowEl){lineRowEl.querySelectorAll('.segment-row').forEach(seg=>{seg.querySelectorAll('.toggle').forEach(btn=>btn.onclick=()=>btn.classList.toggle('active'));seg.querySelector('.remove-segment').onclick=()=>{seg.remove();syncSegmentedLine(lineRowEl)};seg.querySelector('.segment-text').oninput=()=>syncSegmentedLine(lineRowEl);wireColorControl(seg.querySelector('.line-color-control'),'segment')})}
 function refreshRecentColorSwatches(){const html=recentLineColors().length?colorSwatches(recentLineColors(),'recent-color'):'<span class="empty-recent-color">尚無紀錄</span>';document.querySelectorAll('.recent-color-swatches').forEach(el=>{el.innerHTML=html})}
 function setLineColor(row,color,remember=true){setScopedColor(row,'line',color,remember)}
