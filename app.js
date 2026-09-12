@@ -462,7 +462,7 @@ function openEventEditor(id,date){
   $('addHostBtn').onclick=()=>{const x=generatedEventLines().find(x=>x.text.startsWith('主持：'));if(x)appendDisplayLine(x)};
   $('addLecturerBtn').onclick=()=>{const x=generatedEventLines().find(x=>x.text.startsWith('講師：'));if(x)appendDisplayLine(x)};
   $('addCountBtn').onclick=()=>{const x=generatedEventLines().find(x=>x.text.startsWith('統計人數：'));if(x)appendDisplayLine(x)};
-  $('autoFillBtn').onclick=()=>generatedEventLines().forEach(appendDisplayLine);
+  $('autoFillBtn').onclick=()=>generatedEventLines().forEach(line=>appendDisplayLine(line));
   $('smartSuggestBtn').onclick=()=>smartSuggestForEditor();$('cancelModalBtn').onclick=closeModal;$('saveEventBtn').onclick=()=>saveEvent(obj.id,false);$('saveAddSameDayBtn').onclick=()=>saveEvent(obj.id,true);
   if(e)$('deleteEventBtn').onclick=()=>{if(confirm('確定刪除此行程？')){state.events=state.events.filter(x=>x.id!==e.id);saveLocal();closeModal();renderAll()}};
 }
@@ -485,7 +485,7 @@ function wireLineEditors(){document.querySelectorAll('.line-editor').forEach(row
   const native=row.querySelector('.line-color-native');if(native)native.oninput=()=>setLineColor(row,native.value,true);
 })}
 // v11.6: 使用前方可指定 containerId 的共用 collectLines()；避免覆寫造成跨月空白格讀不到文字。
-function autofillEventLines(){generatedEventLines().forEach(appendDisplayLine)}
+function autofillEventLines(){generatedEventLines().forEach(line=>appendDisplayLine(line))}
 function saveEvent(id,addSameDay=false){
   const existing=id?state.events.find(x=>x.id===id):null;
   const typeInput=$('evType').value.trim(),courseInput=$('evCourseName').value.trim();

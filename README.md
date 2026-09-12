@@ -82,3 +82,10 @@ Railway + PostgreSQL 雲端版。v9.0 新增「音控排程專區」，與講師
 - 可新增、刪除、上下移動聯絡資訊。
 - 名稱、地址、TEL、FAX 各自支援字級、常用/最近色票、任意色、靠左/置中/靠右、粗體、斜體、底線。
 - 畫面與 PNG 匯出共用同一套聯絡資訊版面設定。
+
+
+## v11.8 行程「全部加入下方」修正
+- 修正「＋全部加入下方」按鈕沒有反應。
+- 原因：`Array.forEach(appendDisplayLine)` 會把索引值當成 `appendDisplayLine()` 的第二個 `containerId` 參數，導致找不到 `lineEditors` 容器。
+- 已改為 `forEach(line => appendDisplayLine(line))`，確保課程/區域、主持人、講師、統計人數都能正確加入下方顯示文字。
+- 同步修正共用 `autofillEventLines()`。
