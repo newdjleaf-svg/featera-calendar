@@ -275,10 +275,15 @@ function renderCalendar(){
   document.querySelectorAll('.day.blank[data-blank-key]').forEach(el=>el.addEventListener('dblclick',()=>state.mode==='admin'&&openBlankCellEditor(el.dataset.blankKey)));
   document.querySelectorAll('.event-block.clickable').forEach(el=>el.onclick=()=>state.mode==='admin'&&openEventEditor(el.dataset.id));
 }
+function isHeadcountDisplayLine(line){
+  const text=String(line?.text||((line?.segments||[]).map(x=>x.text).join(''))||'').trim();
+  return /^統計人數\s*[：:]/.test(text);
+}
+function visibleEventLines(lines){return (lines||[]).filter(l=>!isHeadcountDisplayLine(l))}
 function renderEvent(e){
-  const lines=(e.lines||[]).map((l,idx)=>renderCalendarLine(l,idx,e.highlight)).join('');
-  const c=e.headcount?`<span class="count-badge">${esc(e.headcount)}人</span>`:'';
-  return `<div class="event-block ${state.mode==='admin'&&!e.systemHoliday?'clickable':''} ${e.systemHoliday?'system-holiday':''}" ${e.systemHoliday?'':`data-id="${esc(e.id)}"`}>${lines}${c}</div>`
+  // 人數統計僅保存於資料庫，不顯示在月曆版面。舊版本若曾產生「統計人數：」顯示行，也會自動隱藏。
+  const lines=visibleEventLines(e.lines).map((l,idx)=>renderCalendarLine(l,idx,e.highlight)).join('');
+  return `<div class="event-block ${state.mode==='admin'&&!e.systemHoliday?'clickable':''} ${e.systemHoliday?'system-holiday':''}" ${e.systemHoliday?'':`data-id="${esc(e.id)}"`}>${lines}</div>`
 }
 function renderContacts(){
   const box=$('contactsGrid'),layout=ensureContactLayout();if(!box)return;
@@ -408,7 +413,7 @@ function wireLineEditors(root=document){root.querySelectorAll('.line-editor').fo
 function collectLines(containerId='lineEditors'){const box=$(containerId);if(!box)return[];return [...box.querySelectorAll('.line-editor')].map(row=>{const base={text:row.querySelector('.line-text').value,size:+row.querySelector('.line-size').value||14,color:normalizeHexColor(row.querySelector('.line-color-value')?.value),align:row.querySelector('.line-align').value,bold:row.querySelector('.line-bold').classList.contains('active'),italic:row.querySelector('.line-italic').classList.contains('active'),underline:row.querySelector('.line-underline').classList.contains('active')};if(row.classList.contains('is-segmented')){base.segments=[...row.querySelectorAll('.segment-row')].map(seg=>({text:seg.querySelector('.segment-text').value,color:normalizeHexColor(seg.querySelector('.segment-color-value')?.value),bold:seg.querySelector('.segment-bold').classList.contains('active'),italic:seg.querySelector('.segment-italic').classList.contains('active'),underline:seg.querySelector('.segment-underline').classList.contains('active')}));base.text=base.segments.map(x=>x.text).join('')}return base})}
 function generatedBlankCellLines(){
   const type=$('blankType')?.value.trim()||'',course=$('blankCourseName')?.value.trim()||'',region=$('blankRegion')?.value.trim()||'';
-  const hostName=$('blankHostName')?.value.trim()||'',lecName=$('blankLecturerName')?.value.trim()||'',head=$('blankCount')?.value||'';
+  const hostName=$('blankHostName')?.value.trim()||'',lecName=$('blankLecturerName')?.value.trim()||'';
   const host=personByName(state.staff.hosts,hostName),lec=personByName(state.staff.lecturers,lecName);
   const lines=[];
   const first=[region,course||type].filter(Boolean).join('-');
@@ -417,23 +422,22 @@ function generatedBlankCellLines(){
   else if(hostName)lines.push({text:`主持：${hostName}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
   if(lec)lines.push({text:`講師：${lec.name}${lec.stars?' '+['','一星','二星','三星'][lec.stars]+'講師':''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
   else if(lecName)lines.push({text:`講師：${lecName}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
-  if(head)lines.push({text:`統計人數：${head}人`,size:12,color:'#555555',align:'left',bold:false,italic:false,underline:false});
   return lines;
 }
 function openBlankCellEditor(key){
   state.blankCells=state.blankCells||{};
   const existing=clone(state.blankCells[key]||{lines:[],type:'',courseName:'',region:'',lecturerName:'',hostName:'',headcount:'',note:''});
-  openModal('跨月空白格行程排定',`<div class="event-assist-note panel-note"><b>跨月空白格也可排入內容</b>：可像一般行程一樣從上方快速帶入課程、區域、主持人、講師與統計人數；加入下方後，每一行都能完全獨立修改文字、大小、顏色、對齊、粗體、斜體、底線、分段顏色與順序。此格不代表實際日期，不參與三個月排程衝突檢查。</div>
+  openModal('跨月空白格行程排定',`<div class="event-assist-note panel-note"><b>跨月空白格也可排入內容</b>：可像一般行程一樣從上方快速帶入課程、區域、主持人與講師；加入下方後，每一行都能完全獨立修改文字、大小、顏色、對齊、粗體、斜體、底線、分段顏色與順序。此格不代表實際日期，不參與三個月排程衝突檢查。</div>
   <div class="form-grid event-assist-grid blank-assist-grid">
     <label class="field"><span>課程類型（可選／可新增）</span><input id="blankType" list="blankTypeList" value="${esc(existing.type||'')}" placeholder="例如：系統培訓">${datalistHtml('blankTypeList',COURSE_TYPES)}</label>
     <label class="field"><span>課程 / 活動名稱（可選／可新增）</span><input id="blankCourseName" list="blankCourseList" value="${esc(existing.courseName||'')}" placeholder="例如：注意事項 / 健康回饋日">${datalistHtml('blankCourseList',courseSuggestionNames())}</label>
     <label class="field"><span>區域（可選／可新增）</span><input id="blankRegion" list="blankRegionList" value="${esc(existing.region||'')}" placeholder="例如：中壢">${datalistHtml('blankRegionList',REGIONS)}</label>
-    <label class="field"><span>統計人數</span><input id="blankCount" type="number" min="0" value="${esc(existing.headcount||'')}" placeholder="可留空"></label>
+    <label class="field"><span>統計人數</span><input id="blankCount" type="number" min="0" value="${esc(existing.headcount||'')}" placeholder="僅存資料庫，不顯示於版面"><small>人數只作統計分析，不加入顯示文字。</small></label>
     <label class="field"><span>講師（可選／可新增）</span><input id="blankLecturerName" list="blankLecturerList" value="${esc(existing.lecturerName||'')}" placeholder="輸入或選擇講師">${datalistHtml('blankLecturerList',state.staff.lecturers.map(x=>x.name))}</label>
     <label class="field"><span>主持人（可選／可新增）</span><input id="blankHostName" list="blankHostList" value="${esc(existing.hostName||'')}" placeholder="輸入或選擇主持人">${datalistHtml('blankHostList',state.staff.hosts.map(x=>x.name))}</label>
     <label class="field span2"><span>附註事項（內部備註，不固定顯示）</span><textarea id="blankNote">${esc(existing.note||'')}</textarea></label>
     <div class="span2 transfer-panel"><div class="transfer-title"><b>↓ 將上方資料加入下方顯示文字</b><span>可重複加入多組內容，同一個空白格可排多筆文字。</span></div>
-      <div class="toolbar-row transfer-buttons"><button id="blankAddCourseBtn" type="button" class="secondary">＋ 課程 / 區域</button><button id="blankAddHostBtn" type="button" class="secondary">＋ 主持人</button><button id="blankAddLecturerBtn" type="button" class="secondary">＋ 講師</button><button id="blankAddCountBtn" type="button" class="secondary">＋ 統計人數</button><button id="blankAutoFillBtn" type="button" class="primary">＋ 全部加入下方</button></div>
+      <div class="toolbar-row transfer-buttons"><button id="blankAddCourseBtn" type="button" class="secondary">＋ 課程 / 區域</button><button id="blankAddHostBtn" type="button" class="secondary">＋ 主持人</button><button id="blankAddLecturerBtn" type="button" class="secondary">＋ 講師</button><button id="blankAutoFillBtn" type="button" class="primary">＋ 全部加入下方</button></div>
     </div>
     <div class="span2 display-lines-panel"><div class="toolbar-row"><b>實際顯示文字（每行皆可修改）</b><button id="blankAddLineBtn" type="button" class="secondary">＋ 手動新增一行</button><button id="blankAddSpaceBtn" type="button" class="secondary">＋ 空白間距行</button></div><div class="panel-note small-note">下方才是實際出現在跨月空白格的內容。每行都可自由輸入，並可獨立設定字體大小、顏色、左／中／右、粗體、斜體、底線、同一行分段顏色與上下順序。</div><div id="blankLineEditors">${lineEditorHtml(existing.lines||[])}</div></div>
   </div>`,`<button id="blankDeleteBtn" class="danger">清除此格</button><button id="blankCancelBtn" class="secondary">取消</button><button id="blankSaveBtn" class="primary">儲存</button>`);
@@ -443,7 +447,6 @@ function openBlankCellEditor(key){
   $('blankAddCourseBtn').onclick=()=>{const [x]=generatedBlankCellLines();if(x)appendDisplayLine(x,'blankLineEditors')};
   $('blankAddHostBtn').onclick=()=>{const x=generatedBlankCellLines().find(x=>x.text.startsWith('主持：'));if(x)appendDisplayLine(x,'blankLineEditors')};
   $('blankAddLecturerBtn').onclick=()=>{const x=generatedBlankCellLines().find(x=>x.text.startsWith('講師：'));if(x)appendDisplayLine(x,'blankLineEditors')};
-  $('blankAddCountBtn').onclick=()=>{const x=generatedBlankCellLines().find(x=>x.text.startsWith('統計人數：'));if(x)appendDisplayLine(x,'blankLineEditors')};
   $('blankAutoFillBtn').onclick=()=>generatedBlankCellLines().forEach(x=>appendDisplayLine(x,'blankLineEditors'));
   $('blankCancelBtn').onclick=closeModal;
   $('blankDeleteBtn').onclick=()=>{delete state.blankCells[key];saveLocal();closeModal();renderAll()};
@@ -461,7 +464,6 @@ function openBlankCellEditor(key){
 function generatedEventLines(){
   const type=$('evType').value.trim(),course=$('evCourseName').value.trim(),region=$('evRegion').value.trim();
   const lec=personByName(state.staff.lecturers,$('evLecturerName').value),host=personByName(state.staff.hosts,$('evHostName').value);
-  const head=$('evCount').value;
   const lines=[];
   const first=[region,course||type].filter(Boolean).join('-');
   if(first){const segs=[];if(region)segs.push({text:region+(course||type?'-':''),color:'#111111',bold:true,italic:false,underline:false});if(course||type)segs.push({text:course||type,color:'#111111',bold:true,italic:false,underline:false});lines.push({text:first,size:16,color:'#111111',align:'left',bold:true,italic:false,underline:false,segments:segs.length>1?segs:undefined})}
@@ -469,7 +471,6 @@ function generatedEventLines(){
   else if($('evHostName').value.trim())lines.push({text:`主持：${$('evHostName').value.trim()}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
   if(lec)lines.push({text:`講師：${lec.name}${lec.stars?' '+['','一星','二星','三星'][lec.stars]+'講師':''}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
   else if($('evLecturerName').value.trim())lines.push({text:`講師：${$('evLecturerName').value.trim()}`,size:13,color:'#555555',align:'left',bold:false,italic:false,underline:false});
-  if(head)lines.push({text:`統計人數：${head}人`,size:12,color:'#555555',align:'left',bold:false,italic:false,underline:false});
   return lines;
 }
 function openEventEditor(id,date){
@@ -483,23 +484,22 @@ function openEventEditor(id,date){
     <label class="field"><span>課程類型（可選／可新增）</span><input id="evType" list="evTypeList" value="${esc(obj.type||'')}" placeholder="例如：系統培訓">${datalistHtml('evTypeList',COURSE_TYPES)}</label>
     <label class="field"><span>課程 / 活動名稱（可選／可新增）</span><input id="evCourseName" list="evCourseList" value="${esc(knownCourse)}" placeholder="例如：產品 Q&A">${datalistHtml('evCourseList',courseSuggestionNames())}</label>
     <label class="field"><span>區域（可選／可新增）</span><input id="evRegion" list="evRegionList" value="${esc(obj.region||'')}" placeholder="例如：宜蘭">${datalistHtml('evRegionList',REGIONS)}</label>
-    <label class="field"><span>統計人數</span><input id="evCount" type="number" min="0" value="${esc(obj.headcount||'')}" placeholder="可留空"></label>
+    <label class="field"><span>統計人數（僅存資料庫）</span><input id="evCount" type="number" min="0" value="${esc(obj.headcount||'')}" placeholder="課程結束後可依日期補登"><small>不顯示於行事曆；用於每日／每月統計、區域分析與講師人數表現參考。</small></label>
     <label class="field"><span>講師（可選／可新增）</span><input id="evLecturerName" list="evLecturerList" value="${esc(lecName)}" placeholder="輸入或選擇講師">${datalistHtml('evLecturerList',state.staff.lecturers.map(x=>x.name))}</label>
     <label class="field"><span>主持人（可選／可新增）</span><input id="evHostName" list="evHostList" value="${esc(hostName)}" placeholder="輸入或選擇主持人">${datalistHtml('evHostList',state.staff.hosts.map(x=>x.name))}</label>
     <label class="field"><span>首行底色提示</span><select id="evHighlight"><option value="0" ${!obj.highlight?'selected':''}>關閉</option><option value="1" ${obj.highlight?'selected':''}>開啟</option></select></label>
     <label class="field span2"><span>附註事項（內部備註，不固定顯示）</span><textarea id="evNote">${esc(obj.note||'')}</textarea></label>
     <div class="span2 transfer-panel"><div class="transfer-title"><b>↓ 將上方資料加入下方顯示文字</b><span>加入後可完全獨立修改，不會因上方欄位再次變更而被覆蓋。</span></div>
-      <div class="toolbar-row transfer-buttons"><button id="addCourseBtn" type="button" class="secondary">＋ 課程 / 區域</button><button id="addHostBtn" type="button" class="secondary">＋ 主持人</button><button id="addLecturerBtn" type="button" class="secondary">＋ 講師</button><button id="addCountBtn" type="button" class="secondary">＋ 統計人數</button><button id="autoFillBtn" type="button" class="primary">＋ 全部加入下方</button><button id="smartSuggestBtn" type="button" class="secondary">✨ 智慧推薦人員</button></div>
+      <div class="toolbar-row transfer-buttons"><button id="addCourseBtn" type="button" class="secondary">＋ 課程 / 區域</button><button id="addHostBtn" type="button" class="secondary">＋ 主持人</button><button id="addLecturerBtn" type="button" class="secondary">＋ 講師</button><button id="autoFillBtn" type="button" class="primary">＋ 全部加入下方</button><button id="smartSuggestBtn" type="button" class="secondary">✨ 智慧推薦人員</button></div>
       <div id="smartSuggestBox" class="smart-suggest-box"></div>
     </div>
-    <div class="span2 display-lines-panel"><div class="toolbar-row"><b>實際顯示文字（每行獨立設定）</b><button id="addLineBtn" type="button" class="secondary">＋ 手動新增一行</button><button id="addBlankLineBtn" type="button" class="secondary">＋ 空白間距行</button></div><div class="panel-note small-note">下方才是實際出現在月曆上的文字。每行可調整字體大小、顏色、靠左／置中／靠右、粗體、斜體、底線與順序。</div><div id="lineEditors">${lineEditorHtml(obj.lines||[])}</div></div>
+    <div class="span2 display-lines-panel"><div class="toolbar-row"><b>實際顯示文字（每行獨立設定）</b><button id="addLineBtn" type="button" class="secondary">＋ 手動新增一行</button><button id="addBlankLineBtn" type="button" class="secondary">＋ 空白間距行</button></div><div class="panel-note small-note">下方才是實際出現在月曆上的文字。每行可調整字體大小、顏色、靠左／置中／靠右、粗體、斜體、底線與順序。</div><div id="lineEditors">${lineEditorHtml(visibleEventLines(obj.lines||[]))}</div></div>
   </div>`,`${e?'<button id="deleteEventBtn" class="danger primary">刪除</button>':''}<button id="cancelModalBtn" class="secondary">取消</button><button id="saveAddSameDayBtn" class="secondary">儲存＋同日新增另一區</button><button id="saveEventBtn" class="primary">儲存</button>`);
   wireLineEditors();
   $('addLineBtn').onclick=()=>appendDisplayLine({text:'',size:14,color:'#111111',align:'left',bold:false,italic:false,underline:false});$('addBlankLineBtn').onclick=()=>appendDisplayLine({text:'',size:18,color:'#111111',align:'left',bold:false,italic:false,underline:false});
   $('addCourseBtn').onclick=()=>{const [x]=generatedEventLines();if(x)appendDisplayLine(x)};
   $('addHostBtn').onclick=()=>{const x=generatedEventLines().find(x=>x.text.startsWith('主持：'));if(x)appendDisplayLine(x)};
   $('addLecturerBtn').onclick=()=>{const x=generatedEventLines().find(x=>x.text.startsWith('講師：'));if(x)appendDisplayLine(x)};
-  $('addCountBtn').onclick=()=>{const x=generatedEventLines().find(x=>x.text.startsWith('統計人數：'));if(x)appendDisplayLine(x)};
   $('autoFillBtn').onclick=()=>generatedEventLines().forEach(line=>appendDisplayLine(line));
   $('smartSuggestBtn').onclick=()=>smartSuggestForEditor();$('cancelModalBtn').onclick=closeModal;$('saveEventBtn').onclick=()=>saveEvent(obj.id,false);$('saveAddSameDayBtn').onclick=()=>saveEvent(obj.id,true);
   if(e)$('deleteEventBtn').onclick=()=>{if(confirm('確定刪除此行程？')){state.events=state.events.filter(x=>x.id!==e.id);saveLocal();closeModal();renderAll()}};
@@ -529,7 +529,7 @@ function saveEvent(id,addSameDay=false){
   const typeInput=$('evType').value.trim(),courseInput=$('evCourseName').value.trim();
   const lecturer=ensurePersonFromInput('lecturer',$('evLecturerName').value),host=ensurePersonFromInput('host',$('evHostName').value);
   ensureCourseFromInput(courseInput,typeInput);
-  const lines=collectLines();lines.forEach(l=>{rememberLineColor(l.color);(l.segments||[]).forEach(s=>rememberLineColor(s.color))});
+  const lines=visibleEventLines(collectLines());lines.forEach(l=>{rememberLineColor(l.color);(l.segments||[]).forEach(s=>rememberLineColor(s.color))});
   const obj={id:id||uid(),date:$('evDate').value,type:typeInput,courseName:courseInput,region:$('evRegion').value.trim(),lecturerId:lecturer?.id||'',hostId:host?.id||'',audioId:existing?.audioId||'',headcount:$('evCount').value,note:$('evNote').value,highlight:$('evHighlight').value==='1',lines,order:existing?.order||0};
   if(!obj.date)return alert('請選擇日期');if(!obj.lines.length&&!confirm('目前下方沒有顯示文字，仍要儲存這筆行程嗎？'))return;
   const idx=state.events.findIndex(x=>x.id===obj.id);if(idx>=0)state.events[idx]=obj;else state.events.push(obj);saveLocal();closeModal();renderAll();if(addSameDay)setTimeout(()=>openEventEditor(null,obj.date),0)
@@ -731,7 +731,26 @@ function showLayout(){
 function handleLogoUpload(e){const f=e.target.files?.[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{state.meta.logo=rd.result;saveLocal();renderHeader()};rd.readAsDataURL(f);e.target.value=''}
 function showSettings(){openModal('系統設定',`<div class="form-grid"><div class="span2 panel-note"><b>Railway PostgreSQL 雲端版</b><br>管理員帳號與密碼由 Railway Service Variables 管理：<code>ADMIN_USER</code>、<code>ADMIN_PASSWORD</code>。資料會在管理員儲存修改時自動同步；訪客登入時會自動讀取最新雲端資料。</div><label class="field span2"><span>台灣國定假日</span><span class="check-label"><input id="taiwanHolidayToggle" type="checkbox" ${state.meta.taiwanHolidays!==false?'checked':''}> 自動顯示行政院人事行政總處公布之國定假日／補假／連假（目前內建 2026、2027）</span><small>系統假日不會覆蓋你手動建立的假日行程；假日日期與文字顏色沿用「星期 / 日期配色」中的國定假日顏色。</small></label></div>`,`<button id="setClose" class="secondary">取消</button><button id="setSave" class="primary">儲存設定</button>`);$('setClose').onclick=closeModal;$('setSave').onclick=()=>{state.meta.taiwanHolidays=$('taiwanHolidayToggle').checked;saveLocal();renderAll();closeModal()}}
 function showCloud(){openModal('Railway 雲端同步',`<div class="panel-note">目前使用 Railway PostgreSQL。登入時自動下載最新資料；管理員每次儲存修改後會自動上傳。也可在此手動同步。</div><div class="toolbar-row"><button id="cloudUpload" class="primary admin-only">↑ 立即上傳</button><button id="cloudDownload" class="secondary">↓ 重新下載</button></div><div id="cloudStatus"></div>`,`<button id="cloudClose" class="secondary">關閉</button>`);$('cloudClose').onclick=closeModal;if(state.mode==='guest')$('cloudUpload')?.classList.add('hidden');$('cloudUpload')?.addEventListener('click',async()=>{try{$('cloudStatus').textContent='上傳中…';await pushCloudState(false);$('cloudStatus').textContent='✅ 已完成 PostgreSQL 上傳'}catch(e){$('cloudStatus').textContent='❌ '+e.message}});$('cloudDownload').onclick=async()=>{try{$('cloudStatus').textContent='下載中…';await pullCloudState();renderAll();$('cloudStatus').textContent='✅ 已下載最新雲端資料'}catch(e){$('cloudStatus').textContent='❌ '+e.message}}}
-function showStats(){const m=monthKey(state.month),ev=state.events.filter(e=>e.date.startsWith(m)),counts=ev.map(e=>+e.headcount||0),total=counts.reduce((a,b)=>a+b,0),n=counts.filter(x=>x>0).length,avg=n?Math.round(total/n):0;const byRegion={};ev.forEach(e=>{if(e.region)byRegion[e.region]=(byRegion[e.region]||0)+(+e.headcount||0)});openModal('本月人數統計',`<div class="stat-cards"><div class="stat-card"><span>排程場次</span><br><b>${ev.length}</b></div><div class="stat-card"><span>簽到總人數</span><br><b>${total}</b></div><div class="stat-card"><span>有填人數場次平均</span><br><b>${avg}</b></div></div><h3>各區合計</h3><table class="history-table"><tr><th>區域</th><th>人數</th></tr>${Object.entries(byRegion).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')}</table>`,`<button id="statsClose" class="primary">關閉</button>`);$('statsClose').onclick=closeModal}
+function showStats(){
+  const m=monthKey(state.month),ev=state.events.filter(e=>e.date.startsWith(m)).sort((a,b)=>a.date.localeCompare(b.date));
+  const filled=ev.filter(e=>(+e.headcount||0)>0),total=filled.reduce((a,e)=>a+(+e.headcount||0),0),avg=filled.length?Math.round(total/filled.length):0;
+  const byRegion={},byLecturer={},byCourse={};
+  for(const e of ev){
+    const n=+e.headcount||0;if(!n)continue;
+    if(e.region)byRegion[e.region]=(byRegion[e.region]||0)+n;
+    const ln=personName(state.staff.lecturers,e.lecturerId)||'未指定講師';
+    const lr=byLecturer[ln]||(byLecturer[ln]={sessions:0,total:0});lr.sessions++;lr.total+=n;
+    const cn=e.courseName||e.type||'未分類課程';byCourse[cn]=(byCourse[cn]||0)+n;
+  }
+  const lecturerRows=Object.entries(byLecturer).map(([name,x])=>({name,...x,avg:Math.round(x.total/x.sessions)})).sort((a,b)=>b.avg-a.avg||b.total-a.total);
+  const dailyRows=ev.map(e=>`<tr><td>${esc(e.date)}</td><td>${esc(e.region||'')}</td><td>${esc(e.courseName||e.type||'')}</td><td>${esc(personName(state.staff.lecturers,e.lecturerId)||'')}</td><td>${(+e.headcount||0)>0?esc(e.headcount):'<span class="muted">未填</span>'}</td></tr>`).join('');
+  openModal('課程人數統計與分析',`<div class="panel-note"><b>${esc(m)} 人數資料</b>只來自每日行程中的「統計人數」欄位，資料存於雲端資料庫，不顯示在行事曆圖片上。講師人數表現僅作智慧推薦與篩選的輔助參考，不等同教學品質評分。</div>
+  <div class="stat-cards"><div class="stat-card"><span>排程場次</span><br><b>${ev.length}</b></div><div class="stat-card"><span>已填人數場次</span><br><b>${filled.length}</b></div><div class="stat-card"><span>本月總人數</span><br><b>${total}</b></div><div class="stat-card"><span>已填場次平均</span><br><b>${avg}</b></div></div>
+  <h3>每日課程人數</h3><div style="overflow:auto;max-height:30vh"><table class="history-table"><tr><th>日期</th><th>區域</th><th>課程</th><th>講師</th><th>人數</th></tr>${dailyRows||'<tr><td colspan="5">本月尚無排程</td></tr>'}</table></div>
+  <h3>講師人數表現參考</h3><table class="history-table"><tr><th>講師</th><th>已填場次</th><th>合計人數</th><th>平均人數</th></tr>${lecturerRows.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.sessions}</td><td>${x.total}</td><td>${x.avg}</td></tr>`).join('')||'<tr><td colspan="4">尚無已填人數資料</td></tr>'}</table>
+  <h3>各區合計</h3><table class="history-table"><tr><th>區域</th><th>人數</th></tr>${Object.entries(byRegion).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="2">尚無資料</td></tr>'}</table>
+  <h3>課程合計</h3><table class="history-table"><tr><th>課程</th><th>人數</th></tr>${Object.entries(byCourse).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="2">尚無資料</td></tr>'}</table>`,`<button id="statsClose" class="primary">關閉</button>`);$('statsClose').onclick=closeModal
+}
 function showHistory(){const ref=state.reference||{};const courseRows=(ref.courseCatalog||[]).map(c=>`<tr><td>${esc(c.category||c.name)}</td><td>${esc(c.name||'')}</td><td>${esc(c.frequency||'')}</td><td>${esc((c.recommendedLecturers||[]).join('、'))}</td><td>${esc((c.allowedLecturers||[]).join('、'))}</td></tr>`).join('');openModal('排程資料庫 / 歷史參考',`<div class="panel-note"><b>已整合「課程行事曆安排(1).xlsx」</b><br>講師 ${(ref.lecturers||[]).length} 人、主持人 ${(ref.hosts||[]).length} 人，並將說明會資格、支援區域、年資、課程頻率與推薦講師納入排程提示。</div><h3>課程規則與推薦</h3><div style="overflow:auto;max-height:38vh"><table class="history-table"><tr><th>類別</th><th>課程</th><th>頻率</th><th>推薦講師</th><th>可安排講師</th></tr>${courseRows}</table></div><h3>課程名稱更新</h3><table class="history-table"><tr><th>原名稱</th><th>更新名稱</th></tr>${(ref.courseNameUpdates||[]).filter(x=>x.new).map(x=>`<tr><td>${esc(x.old)}</td><td>${esc(x.new)}</td></tr>`).join('')}</table><h3>既有歷史摘要</h3><table class="history-table"><tr><th>月份</th><th>摘要</th></tr>${state.history.map(h=>`<tr><td>${esc(h.month)}</td><td>${esc(h.note)}</td></tr>`).join('')}</table>`,`<button id="histClose" class="primary">關閉</button>`);$('histClose').onclick=closeModal}
 
 async function makeCanvas(){document.body.classList.add('exporting');await new Promise(r=>setTimeout(r,80));const sheet=$('sheet');const canvas=await html2canvas(sheet,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,width:sheet.scrollWidth,height:sheet.scrollHeight});document.body.classList.remove('exporting');return canvas}
@@ -755,6 +774,17 @@ function courseRuleForEditor(){
   return courseRuleForText(txt);
 }
 function assignmentEventsForPerson(id){return state.events.filter(e=>e.lecturerId===id||e.hostId===id)}
+function lecturerAttendanceSummary(personId,events=state.events){
+  const rows=events.filter(e=>e.lecturerId===personId&&(+e.headcount||0)>0);
+  const total=rows.reduce((sum,e)=>sum+(+e.headcount||0),0);
+  return {filled:rows.length,total,avg:rows.length?Math.round(total/rows.length):0};
+}
+function attendanceReferenceScore(personId){
+  const all=state.staff.lecturers.map(p=>lecturerAttendanceSummary(p.id)).filter(x=>x.filled>0);
+  const cur=lecturerAttendanceSummary(personId);if(!cur.filled||!all.length)return 0;
+  const maxAvg=Math.max(...all.map(x=>x.avg),1);
+  return Math.round(Math.min(12,(cur.avg/maxAvg)*12));
+}
 function candidateScore(person,role,ctx){
   let score=100,reasons=[];
   const {date,region,type,courseText,lecturer}=ctx;
@@ -768,6 +798,8 @@ function candidateScore(person,role,ctx){
   const mk=date.slice(0,7), monthly=assignments.filter(e=>e.date.startsWith(mk)).length;
   if(role==='lecturer'){
     if(monthly===0){score+=14;reasons.push('本月尚未授課')}else if(monthly===1){score+=5;reasons.push('本月已授課 1 堂')}else {score-=18*(monthly-1);reasons.push(`本月已授課 ${monthly} 堂`)}
+    const perf=lecturerAttendanceSummary(person.id),bonus=attendanceReferenceScore(person.id);
+    if(perf.filled){score+=bonus;reasons.push(`歷史已填 ${perf.filled} 場・均 ${perf.avg} 人`)}
   } else {
     if(monthly===0){score+=18;reasons.push('本月尚未主持')}else {score-=24*monthly;reasons.push(`本月已主持 ${monthly} 堂`)}
   }
@@ -806,7 +838,7 @@ function smartSuggestForEditor(){
   if(chosenLecturer)$('evLecturerName').value=chosenLecturer.name;
   if(hosts[0]?.person)$('evHostName').value=hosts[0].person.name;
   const fmt=(x,role)=>`<div class="smart-candidate"><div><b>${esc(x.person.name)}</b> <span class="score-pill">${x.score} 分</span></div><div class="smart-reasons">${esc(x.reasons.slice(0,4).join('｜')||'符合一般輪替條件')}</div><button type="button" class="mini pick-candidate" data-role="${role}" data-id="${esc(x.person.id)}">選用</button></div>`;
-  $('smartSuggestBox').innerHTML=`<div class="smart-title">✨ 智慧推薦（已先選最高分人選）</div><div class="smart-columns"><div><b>講師 TOP 5</b>${lecturers.map(x=>fmt(x,'lecturer')).join('')}</div><div><b>主持人 TOP 5</b>${hosts.map(x=>fmt(x,'host')).join('')}</div></div><div class="panel-note">評分依三個月輪替、相鄰日期、每月安排次數、說明會資格、支援區域、課程推薦名單，以及主持/主講聘級與星級關係計算。此為排程輔助，仍由管理員最後確認。</div>`;
+  $('smartSuggestBox').innerHTML=`<div class="smart-title">✨ 智慧推薦（已先選最高分人選）</div><div class="smart-columns"><div><b>講師 TOP 5</b>${lecturers.map(x=>fmt(x,'lecturer')).join('')}</div><div><b>主持人 TOP 5</b>${hosts.map(x=>fmt(x,'host')).join('')}</div></div><div class="panel-note">評分依三個月輪替、相鄰日期、每月安排次數、說明會資格、支援區域、課程推薦名單，主持/主講聘級與星級關係，以及已填寫人數的講師人數表現參考計算。人數只作輔助因子，不代表教學品質。此為排程輔助，仍由管理員最後確認。</div>`;
   document.querySelectorAll('.pick-candidate').forEach(b=>b.onclick=()=>{{const list=b.dataset.role==='lecturer'?state.staff.lecturers:state.staff.hosts;const p=list.find(x=>x.id===b.dataset.id);if(!p)return;if(b.dataset.role==='lecturer')$('evLecturerName').value=p.name;else $('evHostName').value=p.name}});
 }
 function enhancedValidate3Months(){
