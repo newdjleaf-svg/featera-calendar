@@ -89,3 +89,10 @@ Railway + PostgreSQL 雲端版。v9.0 新增「音控排程專區」，與講師
 - 原因：`Array.forEach(appendDisplayLine)` 會把索引值當成 `appendDisplayLine()` 的第二個 `containerId` 參數，導致找不到 `lineEditors` 容器。
 - 已改為 `forEach(line => appendDisplayLine(line))`，確保課程/區域、主持人、講師、統計人數都能正確加入下方顯示文字。
 - 同步修正共用 `autofillEventLines()`。
+
+
+## v11.9 分段文字顏色修正
+- 修正「分段」模式下點擊顏色按鈕沒有反應的問題。
+- 色票改為掛載在頁面最上層的全域浮動面板，不再受 Modal、行編輯器或分段容器 overflow 裁切。
+- 分段文字仍保留常用色、最近使用顏色與其他顏色調色盤。
+- 主行文字、分段文字與聯絡資訊的色票共用同一套穩定機制。
