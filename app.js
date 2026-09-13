@@ -204,7 +204,7 @@ function bind(){
   $('monthPicker').onchange=e=>{if(e.target.value){const [y,m]=e.target.value.split('-').map(Number);state.month=new Date(y,m-1,1);renderAll()}};
   $('addEventBtn').onclick=()=>openEventEditor(null,ymd(state.month)); $('plannerBtn').onclick=showSmartPlanner; $('validateBtn').onclick=showValidation;
   $('staffBtn').onclick=showStaff; $('audioBtn').onclick=()=>openAudioWorkspace(); $('layoutBtn').onclick=showLayout; $('appearanceBtn').onclick=showAppearance; $('settingsBtn').onclick=showSettings; $('statsBtn').onclick=showStats; $('historyBtn').onclick=showHistory;
-  $('exportBtn').onclick=exportPNG; $('shareBtn').onclick=sharePNG; $('cloudBtn').onclick=showCloud;
+  $('exportBtn').onclick=exportPNG; $('exportPdfBtn').onclick=exportCalendarPDF; $('shareBtn').onclick=sharePNG; $('cloudBtn').onclick=showCloud;
   $('modalClose').onclick=closeModal; $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
   $('logoUpload').onchange=handleLogoUpload; bindAudioControls();
 }
@@ -800,26 +800,73 @@ function showLayout(){
 function handleLogoUpload(e){const f=e.target.files?.[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{state.meta.logo=rd.result;saveLocal();renderHeader()};rd.readAsDataURL(f);e.target.value=''}
 function showSettings(){openModal('系統設定',`<div class="form-grid"><div class="span2 panel-note"><b>Railway PostgreSQL 雲端版</b><br>管理員帳號與密碼由 Railway Service Variables 管理：<code>ADMIN_USER</code>、<code>ADMIN_PASSWORD</code>。資料會在管理員儲存修改時自動同步；訪客登入時會自動讀取最新雲端資料。</div><label class="field span2"><span>台灣國定假日</span><span class="check-label"><input id="taiwanHolidayToggle" type="checkbox" ${state.meta.taiwanHolidays!==false?'checked':''}> 自動顯示行政院人事行政總處公布之國定假日／補假／連假（目前內建 2026、2027）</span><small>系統假日不會覆蓋你手動建立的假日行程；假日日期與文字顏色沿用「星期 / 日期配色」中的國定假日顏色。</small></label></div>`,`<button id="setClose" class="secondary">取消</button><button id="setSave" class="primary">儲存設定</button>`);$('setClose').onclick=closeModal;$('setSave').onclick=()=>{state.meta.taiwanHolidays=$('taiwanHolidayToggle').checked;saveLocal();renderAll();closeModal()}}
 function showCloud(){openModal('Railway 雲端同步',`<div class="panel-note">目前使用 Railway PostgreSQL。登入時自動下載最新資料；管理員每次儲存修改後會自動上傳。也可在此手動同步。</div><div class="toolbar-row"><button id="cloudUpload" class="primary admin-only">↑ 立即上傳</button><button id="cloudDownload" class="secondary">↓ 重新下載</button></div><div id="cloudStatus"></div>`,`<button id="cloudClose" class="secondary">關閉</button>`);$('cloudClose').onclick=closeModal;if(state.mode==='guest')$('cloudUpload')?.classList.add('hidden');$('cloudUpload')?.addEventListener('click',async()=>{try{$('cloudStatus').textContent='上傳中…';await pushCloudState(false);$('cloudStatus').textContent='✅ 已完成 PostgreSQL 上傳'}catch(e){$('cloudStatus').textContent='❌ '+e.message}});$('cloudDownload').onclick=async()=>{try{$('cloudStatus').textContent='下載中…';await pullCloudState();renderAll();$('cloudStatus').textContent='✅ 已下載最新雲端資料'}catch(e){$('cloudStatus').textContent='❌ '+e.message}}}
-function showStats(){
-  const m=monthKey(state.month),ev=state.events.filter(e=>e.date.startsWith(m)).sort((a,b)=>a.date.localeCompare(b.date));
-  const filled=ev.filter(e=>(+e.headcount||0)>0),total=filled.reduce((a,e)=>a+(+e.headcount||0),0),avg=filled.length?Math.round(total/filled.length):0;
+function statsEventCourseName(e){return e.courseName||e.type||'未分類課程'}
+function statsWeekday(date){return ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'][parseDate(date).getDay()]}
+function statsLecturerText(e){
+  const person=state.staff.lecturers.find(x=>x.id===e.lecturerId);
+  if(!person)return '';
+  const title=staffAutoDisplay(person,'lecturer');
+  return title?`${person.name}${title}`:person.name;
+}
+function statsMonthEvents(d){
+  const mk=monthKey(d);
+  return state.events.filter(e=>e.date?.startsWith(mk)&&e.type!=='假日/休假').sort((a,b)=>a.date.localeCompare(b.date)||(a.order||0)-(b.order||0));
+}
+function buildMonthlyHeadcountColumns(d){
+  const columns=REGIONS.map(region=>({key:'region-'+region,title:region,sub:'系統培訓',items:[]}));
+  columns.push({key:'brief-1',title:'各區',sub:'說明會',items:[]},{key:'brief-2',title:'各區',sub:'說明會',items:[]});
+  const byRegion=Object.fromEntries(columns.slice(0,REGIONS.length).map(c=>[c.title,c]));
+  let briefIndex=0;
+  for(const e of statsMonthEvents(d)){
+    const isBrief=e.type==='說明會'||/說明會/.test(statsEventCourseName(e));
+    if(isBrief){columns[REGIONS.length+(briefIndex++%2)].items.push(e);continue}
+    if(byRegion[e.region])byRegion[e.region].items.push(e);
+    else columns[REGIONS.length+(briefIndex++%2)].items.push(e);
+  }
+  return columns;
+}
+function statsCellHtml(e){
+  if(!e)return '<td class="monthly-stats-empty"></td>';
+  const n=(+e.headcount||0)>0?String(+e.headcount):'';
+  const course=statsEventCourseName(e);
+  const lecturer=statsLecturerText(e);
+  return `<td class="monthly-stats-event ${state.mode==='admin'?'editable':''}" data-stats-event-id="${esc(e.id)}"><div class="stats-date-band">${esc(e.date.slice(5).replace('-','/'))}</div><div class="stats-weekday-band">${esc(statsWeekday(e.date))}</div><div class="stats-course">${esc(course)}</div>${lecturer?`<div class="stats-lecturer">${esc(lecturer)}</div>`:''}<div class="stats-count ${n?'':'missing'}">${n||'未填'}</div></td>`;
+}
+function monthlyHeadcountTableHtml(d){
+  const cols=buildMonthlyHeadcountColumns(d),max=Math.max(1,...cols.map(c=>c.items.length));
+  let rows='';
+  for(let r=0;r<max;r++)rows+=`<tr>${cols.map(c=>statsCellHtml(c.items[r])).join('')}</tr>`;
+  return `<div id="monthlyStatsExportArea" class="monthly-stats-sheet"><div class="monthly-stats-title">課 程 人 數（簽 到 人 數）</div><table class="monthly-stats-table"><thead><tr>${cols.map(c=>`<th><b>${esc(c.title)}</b><span>${esc(c.sub)}</span></th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function statsAnalysisHtml(d){
+  const ev=statsMonthEvents(d),filled=ev.filter(e=>(+e.headcount||0)>0),total=filled.reduce((a,e)=>a+(+e.headcount||0),0),avg=filled.length?Math.round(total/filled.length):0;
   const byRegion={},byLecturer={},byCourse={};
-  for(const e of ev){
-    const n=+e.headcount||0;if(!n)continue;
-    if(e.region)byRegion[e.region]=(byRegion[e.region]||0)+n;
-    const ln=personName(state.staff.lecturers,e.lecturerId)||'未指定講師';
-    const lr=byLecturer[ln]||(byLecturer[ln]={sessions:0,total:0});lr.sessions++;lr.total+=n;
-    const cn=e.courseName||e.type||'未分類課程';byCourse[cn]=(byCourse[cn]||0)+n;
+  for(const e of filled){
+    const n=+e.headcount||0;if(e.region)byRegion[e.region]=(byRegion[e.region]||0)+n;
+    const ln=personName(state.staff.lecturers,e.lecturerId)||'未指定講師';const lr=byLecturer[ln]||(byLecturer[ln]={sessions:0,total:0});lr.sessions++;lr.total+=n;
+    const cn=statsEventCourseName(e);byCourse[cn]=(byCourse[cn]||0)+n;
   }
   const lecturerRows=Object.entries(byLecturer).map(([name,x])=>({name,...x,avg:Math.round(x.total/x.sessions)})).sort((a,b)=>b.avg-a.avg||b.total-a.total);
-  const dailyRows=ev.map(e=>`<tr><td>${esc(e.date)}</td><td>${esc(e.region||'')}</td><td>${esc(e.courseName||e.type||'')}</td><td>${esc(personName(state.staff.lecturers,e.lecturerId)||'')}</td><td>${(+e.headcount||0)>0?esc(e.headcount):'<span class="muted">未填</span>'}</td></tr>`).join('');
-  openModal('課程人數統計與分析',`<div class="panel-note"><b>${esc(m)} 人數資料</b>只來自每日行程中的「統計人數」欄位，資料存於雲端資料庫，不顯示在行事曆圖片上。講師人數表現僅作智慧推薦與篩選的輔助參考，不等同教學品質評分。</div>
-  <div class="stat-cards"><div class="stat-card"><span>排程場次</span><br><b>${ev.length}</b></div><div class="stat-card"><span>已填人數場次</span><br><b>${filled.length}</b></div><div class="stat-card"><span>本月總人數</span><br><b>${total}</b></div><div class="stat-card"><span>已填場次平均</span><br><b>${avg}</b></div></div>
-  <h3>每日課程人數</h3><div style="overflow:auto;max-height:30vh"><table class="history-table"><tr><th>日期</th><th>區域</th><th>課程</th><th>講師</th><th>人數</th></tr>${dailyRows||'<tr><td colspan="5">本月尚無排程</td></tr>'}</table></div>
-  <h3>講師人數表現參考</h3><table class="history-table"><tr><th>講師</th><th>已填場次</th><th>合計人數</th><th>平均人數</th></tr>${lecturerRows.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.sessions}</td><td>${x.total}</td><td>${x.avg}</td></tr>`).join('')||'<tr><td colspan="4">尚無已填人數資料</td></tr>'}</table>
-  <h3>各區合計</h3><table class="history-table"><tr><th>區域</th><th>人數</th></tr>${Object.entries(byRegion).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="2">尚無資料</td></tr>'}</table>
-  <h3>課程合計</h3><table class="history-table"><tr><th>課程</th><th>人數</th></tr>${Object.entries(byCourse).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="2">尚無資料</td></tr>'}</table>`,`<button id="statsClose" class="primary">關閉</button>`);$('statsClose').onclick=closeModal
+  return `<div class="stat-cards"><div class="stat-card"><span>排程場次</span><br><b>${ev.length}</b></div><div class="stat-card"><span>已填人數場次</span><br><b>${filled.length}</b></div><div class="stat-card"><span>本月總人數</span><br><b>${total}</b></div><div class="stat-card"><span>已填場次平均</span><br><b>${avg}</b></div></div><div class="stats-analysis-grid"><div><h3>講師人數表現參考</h3><table class="history-table"><tr><th>講師</th><th>場次</th><th>合計</th><th>平均</th></tr>${lecturerRows.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.sessions}</td><td>${x.total}</td><td>${x.avg}</td></tr>`).join('')||'<tr><td colspan="4">尚無已填人數資料</td></tr>'}</table></div><div><h3>各區合計</h3><table class="history-table"><tr><th>區域</th><th>人數</th></tr>${Object.entries(byRegion).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="2">尚無資料</td></tr>'}</table></div><div><h3>課程合計</h3><table class="history-table"><tr><th>課程</th><th>人數</th></tr>${Object.entries(byCourse).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="2">尚無資料</td></tr>'}</table></div></div>`;
 }
+function showStats(monthDate=state.month){
+  const d=new Date(monthDate.getFullYear(),monthDate.getMonth(),1),mk=monthKey(d);
+  openModal('每月課程人數統計',`<div class="stats-toolbar no-stats-export"><button id="statsPrev" class="secondary">‹ 上月</button><input id="statsMonthPicker" type="month" value="${mk}"><button id="statsNext" class="secondary">下月 ›</button><span class="panel-note-inline">行事曆「統計人數」一儲存即自動反映。點表格內課程可回到該筆行程編輯。</span></div><div class="monthly-stats-scroll">${monthlyHeadcountTableHtml(d)}</div>${statsAnalysisHtml(d)}`,
+  `<button id="statsPng" class="primary">匯出 PNG</button><button id="statsPdf" class="secondary">匯出 PDF</button><button id="statsClose" class="secondary">關閉</button>`);
+  $('statsClose').onclick=closeModal;
+  $('statsPrev').onclick=()=>showStats(new Date(d.getFullYear(),d.getMonth()-1,1));
+  $('statsNext').onclick=()=>showStats(new Date(d.getFullYear(),d.getMonth()+1,1));
+  $('statsMonthPicker').onchange=e=>{if(e.target.value){const [y,m]=e.target.value.split('-').map(Number);showStats(new Date(y,m-1,1))}};
+  $('statsPng').onclick=()=>exportMonthlyStatsPNG(d);$('statsPdf').onclick=()=>exportMonthlyStatsPDF(d);
+  document.querySelectorAll('[data-stats-event-id]').forEach(td=>td.onclick=()=>{if(state.mode==='admin')openEventEditor(td.dataset.statsEventId)});
+}
+async function makeMonthlyStatsCanvas(){
+  const el=$('monthlyStatsExportArea');if(!el)throw new Error('找不到每月人數統計表');
+  await new Promise(r=>setTimeout(r,60));return html2canvas(el,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,width:el.scrollWidth,height:el.scrollHeight,windowWidth:Math.max(document.documentElement.clientWidth,el.scrollWidth)});
+}
+async function exportMonthlyStatsPNG(d){try{const canvas=await makeMonthlyStatsCanvas(),a=document.createElement('a');a.download=`FEATERA_${monthKey(d)}_每月課程人數統計.png`;a.href=canvas.toDataURL('image/png');a.click()}catch(e){alert('每月人數統計 PNG 匯出失敗：'+e.message)}}
+async function exportMonthlyStatsPDF(d){try{const canvas=await makeMonthlyStatsCanvas();downloadCanvasPDF(canvas,`FEATERA_${monthKey(d)}_每月課程人數統計.pdf`)}catch(e){alert('每月人數統計 PDF 匯出失敗：'+e.message)}}
+
 function ensureAdminRuleBlocks(){
   state.meta=state.meta||{};
   if(!Array.isArray(state.meta.adminRuleBlocks))state.meta.adminRuleBlocks=[];
@@ -866,7 +913,9 @@ function showHistory(){
 }
 
 async function makeCanvas(){document.body.classList.add('exporting');await new Promise(r=>setTimeout(r,80));const sheet=$('sheet');const canvas=await html2canvas(sheet,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,width:sheet.scrollWidth,height:sheet.scrollHeight});document.body.classList.remove('exporting');return canvas}
+function downloadCanvasPDF(canvas,filename){const ns=window.jspdf;if(!ns?.jsPDF)throw new Error('PDF 元件尚未載入，請重新整理後再試');const {jsPDF}=ns;const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4',compress:true});const pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight(),margin=4,availW=pw-margin*2,availH=ph-margin*2,ratio=Math.min(availW/canvas.width,availH/canvas.height),w=canvas.width*ratio,h=canvas.height*ratio,x=(pw-w)/2,y=(ph-h)/2;pdf.addImage(canvas.toDataURL('image/jpeg',0.94),'JPEG',x,y,w,h,undefined,'FAST');pdf.save(filename)}
 async function exportPNG(){try{const canvas=await makeCanvas();const a=document.createElement('a');a.download=`FEATERA_${$('calendarTitle').textContent}.png`;a.href=canvas.toDataURL('image/png');a.click()}catch(e){document.body.classList.remove('exporting');alert('匯出失敗：'+e.message)}}
+async function exportCalendarPDF(){try{const canvas=await makeCanvas();downloadCanvasPDF(canvas,`FEATERA_${$('calendarTitle').textContent}.pdf`)}catch(e){document.body.classList.remove('exporting');alert('PDF 匯出失敗：'+e.message)}}
 async function sharePNG(){try{const canvas=await makeCanvas();const blob=await new Promise(r=>canvas.toBlob(r,'image/png'));const file=new File([blob],`FEATERA_${$('calendarTitle').textContent}.png`,{type:'image/png'});if(navigator.canShare?.({files:[file]})){await navigator.share({title:$('calendarTitle').textContent,text:'FEATERA 行事曆',files:[file]})}else{const a=document.createElement('a');a.download=file.name;a.href=URL.createObjectURL(blob);a.click();alert('此瀏覽器不支援直接分享，已改為下載 PNG。')}}catch(e){document.body.classList.remove('exporting');if(e.name!=='AbortError')alert('分享失敗：'+e.message)}}
 
 
@@ -1043,7 +1092,7 @@ function bindAudioControls(){
   $('djNextBtn').onclick=()=>{state.audioMonth=new Date(state.audioMonth.getFullYear(),state.audioMonth.getMonth()+1,1);renderAudioSheet()};
   $('djMonthPicker').onchange=e=>{if(e.target.value){const [y,m]=e.target.value.split('-').map(Number);state.audioMonth=new Date(y,m-1,1);renderAudioSheet()}};
   $('djAddBtn').onclick=()=>openAudioEditor();$('djPeopleBtn').onclick=showAudioPeople;$('djLayoutBtn').onclick=showAudioLayout;
-  $('djExportBtn').onclick=exportAudioPNG;$('djShareBtn').onclick=shareAudioPNG;
+  $('djExportBtn').onclick=exportAudioPNG;$('djExportPdfBtn').onclick=exportAudioPDF;$('djShareBtn').onclick=shareAudioPNG;
 }
 function showCalendarWorkspace(){
   state.view='calendar';$('calendarWorkspace').classList.remove('hidden');$('djWorkspace').classList.add('hidden');
@@ -1164,6 +1213,7 @@ function showAudioPeople(){
 function showAudioLayout(){const m=state.audioState.meta;openModal('音控表版面設定',`<div class="form-grid"><label class="field span2"><span>大標題格式</span><input id="djlTitle" value="${esc(m.titleTemplate)}"><small>可使用 {Y}、{M}</small></label><label class="field"><span>分公司欄文字</span><input id="djlBranch" value="${esc(m.branchLabel)}"></label><label class="field"><span>日期欄文字</span><input id="djlDate" value="${esc(m.dateLabel)}"></label><label class="field"><span>音控欄文字</span><input id="djlAudio" value="${esc(m.audioLabel)}"></label><label class="field"><span>回饋日欄文字</span><input id="djlFeedback" value="${esc(m.feedbackLabel)}"></label><label class="field span2"><span>星期文字（逗號分隔 7 個）</span><input id="djlWeekdays" value="${esc((m.weekdayLabels||['星期一','星期二','星期三','星期四','星期五','星期六','星期日']).join('、'))}"></label><label class="field"><span>標題顏色</span><input id="djlTitleColor" type="color" value="${esc(m.titleColor)}"></label><label class="field"><span>星期背景</span><input id="djlWeekBg" type="color" value="${esc(m.weekdayBg)}"></label><label class="field"><span>星期文字</span><input id="djlWeekText" type="color" value="${esc(m.weekdayText)}"></label><label class="field"><span>週末文字</span><input id="djlWeekend" type="color" value="${esc(m.weekendText)}"></label><label class="field"><span>日期背景</span><input id="djlDateBg" type="color" value="${esc(m.dateBg)}"></label><label class="field"><span>音控背景</span><input id="djlAudioBg" type="color" value="${esc(m.audioBg)}"></label><label class="field"><span>格線顏色</span><input id="djlGrid" type="color" value="${esc(m.gridColor)}"></label><div class="span2 toolbar-row"><button id="djlLogo" class="secondary">使用目前行事曆 Logo</button></div></div>`,`<button id="djlCancel" class="secondary">取消</button><button id="djlSave" class="dj-primary">儲存並上傳</button>`);$('djlCancel').onclick=closeModal;$('djlLogo').onclick=()=>{m.logo=state.meta.logo||'';alert('已套用目前行事曆 Logo，按儲存後上傳。')};$('djlSave').onclick=async()=>{m.titleTemplate=$('djlTitle').value;m.branchLabel=$('djlBranch').value;m.dateLabel=$('djlDate').value;m.audioLabel=$('djlAudio').value;m.feedbackLabel=$('djlFeedback').value;m.weekdayLabels=$('djlWeekdays').value.split(/[、,，]/).map(x=>x.trim()).filter(Boolean).slice(0,7);m.titleColor=$('djlTitleColor').value;m.weekdayBg=$('djlWeekBg').value;m.weekdayText=$('djlWeekText').value;m.weekendText=$('djlWeekend').value;m.dateBg=$('djlDateBg').value;m.audioBg=$('djlAudioBg').value;m.gridColor=$('djlGrid').value;await pushAudioState(false);closeModal();renderAudioSheet()}}
 async function makeAudioCanvas(){document.body.classList.add('exporting-audio');await new Promise(r=>setTimeout(r,80));const sheet=$('djSheet');const canvas=await html2canvas(sheet,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,width:sheet.scrollWidth,height:sheet.scrollHeight});document.body.classList.remove('exporting-audio');return canvas}
 async function exportAudioPNG(){try{const canvas=await makeAudioCanvas(),a=document.createElement('a');a.download=`FEATERA_${audioTitle()}.png`;a.href=canvas.toDataURL('image/png');a.click()}catch(e){document.body.classList.remove('exporting-audio');alert('音控表匯出失敗：'+e.message)}}
+async function exportAudioPDF(){try{const canvas=await makeAudioCanvas();downloadCanvasPDF(canvas,`FEATERA_${audioTitle()}.pdf`)}catch(e){document.body.classList.remove('exporting-audio');alert('音控表 PDF 匯出失敗：'+e.message)}}
 async function shareAudioPNG(){try{const canvas=await makeAudioCanvas(),blob=await new Promise(r=>canvas.toBlob(r,'image/png')),file=new File([blob],`FEATERA_${audioTitle()}.png`,{type:'image/png'});if(navigator.canShare?.({files:[file]})){await navigator.share({title:audioTitle(),text:'FEATERA 音控擔任表',files:[file]})}else{const a=document.createElement('a');a.download=file.name;a.href=URL.createObjectURL(blob);a.click();alert('此瀏覽器不支援直接分享，已改為下載 PNG，可再透過通訊軟體或 Email 傳送。')}}catch(e){document.body.classList.remove('exporting-audio');if(e.name!=='AbortError')alert('分享失敗：'+e.message)}}
 
 initialize().catch(e=>{console.error(e);alert('系統初始化失敗：'+e.message)});

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=11.16.0" />
+  <link rel="stylesheet" href="style.css?v=11.17.0" />
 </head>
 <body>
   <section id="loginView" class="login-view">
@@ -43,6 +43,7 @@
       <div class="topbar-actions">
         <button id="cloudBtn" class="secondary">☁ 雲端</button>
         <button id="exportBtn" class="primary">匯出 PNG</button>
+        <button id="exportPdfBtn" class="secondary">匯出 PDF</button>
         <button id="shareBtn" class="secondary">分享</button>
         <button id="logoutBtn" class="ghost">登出</button>
       </div>
@@ -71,10 +72,10 @@
         <button id="layoutBtn" class="secondary full">標題 / Logo / 聯絡資訊</button>
         <button id="appearanceBtn" class="secondary full">🎨 星期 / 日期配色</button>
         <button id="settingsBtn" class="secondary full">系統設定</button>
+        <button id="statsBtn" class="secondary full">📊 每月人數統計</button>
       </div>
       <div class="side-section">
         <div class="side-title">快速檢視</div>
-        <button id="statsBtn" class="secondary full">本月人數統計</button>
         <button id="historyBtn" class="secondary full">排程規則 / 管理備註</button>
       </div>
     </aside>
@@ -117,6 +118,7 @@
             <button id="djPeopleBtn" class="secondary dj-editor-only">音控名單</button>
             <button id="djLayoutBtn" class="secondary dj-editor-only">版面設定</button>
             <button id="djExportBtn" class="primary">匯出 PNG</button>
+            <button id="djExportPdfBtn" class="secondary">匯出 PDF</button>
             <button id="djShareBtn" class="secondary">分享</button>
           </div>
         </div>
@@ -145,7 +147,8 @@
 
   <input id="logoUpload" type="file" accept="image/*" class="hidden" />
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
   
-  <script src="app.js?v=11.16.0"></script>
+  <script src="app.js?v=11.17.0"></script>
 </body>
 </html>
