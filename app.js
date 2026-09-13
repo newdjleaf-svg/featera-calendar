@@ -96,7 +96,7 @@ function contactStyleCss(st){return `font-size:${Number(st.size)||10.5}px;color:
 const state={
   month:new Date(2026,8,1), mode:'admin', view:'calendar', events:[], blankCells:{}, staff:{lecturers:[],hosts:[],audio:[]}, contacts:[],
   audioMonth:new Date(2026,8,1), audioState:{schedule:[],staff:[],meta:clone(DEFAULT_DJ_META)}, audioContext:{events:[],hosts:[]},
-  meta:{titleTemplate:'{Y}年{M}月行事曆',subtitle:'',businessHours:'',hotline:'',logo:'',taiwanHolidays:true,appearance:clone(DEFAULT_APPEARANCE),adminSchedulingNotes:'',adminSchedulingRules:'',deletedStaff:{lecturers:[],hosts:[]}}, admin:{...DEFAULT_ADMIN}, history:[], reference:{lecturers:[],hosts:[],courseCatalog:[],courseNameUpdates:[],schedulingRules:[]}
+  meta:{titleTemplate:'{Y}年{M}月行事曆',subtitle:'',businessHours:'',hotline:'',logo:'',taiwanHolidays:true,appearance:clone(DEFAULT_APPEARANCE),adminSchedulingNotes:'',adminSchedulingRules:'',adminRuleBlocks:[],courseLibrary:[],deletedStaff:{lecturers:[],hosts:[]}}, admin:{...DEFAULT_ADMIN}, history:[], reference:{lecturers:[],hosts:[],courseCatalog:[],courseNameUpdates:[],schedulingRules:[]}
 };
 let cloudReady=false;
 let cloudSaveTimer=null;
@@ -121,7 +121,7 @@ async function pullCloudState(){
   const r=await fetch('/api/state',{cache:'no-store'});
   if(!r.ok)throw new Error('雲端讀取失敗 ('+r.status+')');
   const data=await r.json();
-  if(data?.payload&&Object.keys(data.payload).length){Object.assign(state,data.payload);ensureDeletedStaffMeta();mergeReferenceIntoStaff();localStorage.setItem(LS_KEY,JSON.stringify({...data.payload,admin:state.admin}));return true}
+  if(data?.payload&&Object.keys(data.payload).length){Object.assign(state,data.payload);ensureDeletedStaffMeta();migrateLegacyCourseCatalog();mergeReferenceIntoStaff();localStorage.setItem(LS_KEY,JSON.stringify({...data.payload,admin:state.admin}));return true}
   return false;
 }
 async function pushCloudState(showMessage=true){
@@ -191,6 +191,7 @@ async function initialize(){
   await loadSeed();
   try{const saved=JSON.parse(localStorage.getItem(LS_KEY)||'null');if(saved)Object.assign(state,saved)}catch{}
   ensureDeletedStaffMeta();
+  migrateLegacyCourseCatalog();
   ensureSpecialStaffTitles();
   bind(); renderAll();
 }
@@ -354,13 +355,28 @@ function ensurePersonFromInput(kind,name){
   list.push(p);return p;
 }
 function datalistHtml(id,items){const vals=[...new Set(items.map(x=>String(x||'').trim()).filter(Boolean))];return `<datalist id="${id}">${vals.map(x=>`<option value="${esc(x)}"></option>`).join('')}</datalist>`}
-function courseSuggestionNames(){return [...COURSE_TYPES,...(state.reference.courseCatalog||[]).flatMap(c=>[c.name,c.category]),...(state.reference.courseNameUpdates||[]).flatMap(x=>[x.oldName,x.newName])].filter(Boolean)}
+function ensureCourseLibrary(){
+  state.meta=state.meta||{};
+  if(!Array.isArray(state.meta.courseLibrary))state.meta.courseLibrary=[];
+  state.meta.courseLibrary=[...new Set(state.meta.courseLibrary.map(x=>String(x||'').trim()).filter(Boolean))];
+  return state.meta.courseLibrary;
+}
+function migrateLegacyCourseCatalog(){
+  state.reference=state.reference||{};
+  const lib=ensureCourseLibrary();
+  // 只保留管理員實際建立/已排定過的課程名稱；舊附件的推薦名單不再載入或影響智慧排課。
+  for(const c of (state.reference.courseCatalog||[]))if(c?.source==='行程手動新增'&&String(c.name||'').trim())lib.push(String(c.name).trim());
+  for(const e of (state.events||[]))if(String(e.courseName||'').trim())lib.push(String(e.courseName).trim());
+  state.meta.courseLibrary=[...new Set(lib)];
+  state.reference.courseCatalog=[];
+  state.reference.courseNameUpdates=[];
+  state.meta.legacyCourseRecommendationsRemoved=true;
+}
+function courseSuggestionNames(){return [...COURSE_TYPES,...ensureCourseLibrary(),...(state.events||[]).flatMap(e=>[e.courseName,e.type])].filter(Boolean)}
 function ensureCourseFromInput(name,type){
-  const n=String(name||'').trim(),cat=String(type||'').trim();if(!n)return null;
-  state.reference=state.reference||{};state.reference.courseCatalog=Array.isArray(state.reference.courseCatalog)?state.reference.courseCatalog:[];
-  let c=state.reference.courseCatalog.find(x=>String(x.name||'').trim()===n);
-  if(c){if(!c.category&&cat)c.category=cat;return c}
-  c={category:cat||'自訂課程',name:n,frequency:'',recommendedLecturers:[],allowedLecturers:[],source:'行程手動新增'};state.reference.courseCatalog.push(c);return c;
+  const n=String(name||'').trim();if(!n)return null;
+  const lib=ensureCourseLibrary();if(!lib.includes(n))lib.push(n);
+  return {category:String(type||'').trim()||'自訂課程',name:n,source:'管理員課程資料庫'};
 }
 function defaultLines(){return []}
 const COMMON_LINE_COLORS=['#111111','#555555','#0057B8','#16831F','#D0181D','#F28C28','#7A2CBF','#B8860B'];
@@ -584,7 +600,7 @@ function validate3Months(){
   for(const r of REGIONS){const arr=feedback.filter(e=>e.region===r).sort((a,b)=>a.date.localeCompare(b.date));for(let i=1;i<arr.length;i++){const days=(parseDate(arr[i].date)-parseDate(arr[i-1].date))/86400000;if(days<12)w.push({title:'同區回饋日間隔',text:`${r} ${arr[i-1].date} 與 ${arr[i].date} 僅相隔 ${days} 天，附件建議約兩週。`})}}
   feedback.forEach(e=>{const host=state.staff.hosts.find(x=>x.id===e.hostId),lec=state.staff.lecturers.find(x=>x.id===e.lecturerId);if(!host||!lec||lec.special)return;const hs=rankScore(host.rank),ls=rankScore(lec.rank);if((host.stars||0)>(lec.stars||0)&&lec.stars>0)w.push({title:'主持/講師星級順序',text:`${e.date} 主持人 ${host.name} 的講師星級可能高於主講 ${lec.name}，請人工確認。`,severe:true});if(hs&&ls&&hs>ls)w.push({title:'主持/講師聘級順序',text:`${e.date} 主持人 ${host.name} 聘級高於主講 ${lec.name}，請確認是否符合例外條件。`,severe:true})});
   // Excel 名單資格、區域與課程推薦規則
-  ev.forEach(e=>{const lec=state.staff.lecturers.find(x=>x.id===e.lecturerId),host=state.staff.hosts.find(x=>x.id===e.hostId),txt=eventCourseText(e);if(e.type==='說明會'){if(lec&&lec.seminarQualified===false)w.push({title:'講師說明會資格',text:`${e.date} ${lec.name} 在來源名單未標示說明會主講資格 V，請確認。`,severe:true});if(host&&host.seminarQualified===false)w.push({title:'主持人說明會資格',text:`${e.date} ${host.name} 在來源名單未標示說明會資格 V，請確認。`,severe:true})}for(const p of [lec,host])if(p&&e.region&&Array.isArray(p.regions)&&p.regions.length&&!p.regions.includes(e.region))w.push({title:'支援區域確認',text:`${e.date} ${p.name} 名單支援區域為 ${p.regions.join('、')}，本次安排 ${e.region}，請人工確認。`});const rule=(state.reference.courseCatalog||[]).find(c=>c.name&&txt.includes(c.name)||c.category&&txt.includes(c.category));if(rule&&lec){const listed=[...(rule.recommendedLecturers||[]),...(rule.allowedLecturers||[])];if(listed.length&&!nameMatch(listed,lec.name))w.push({title:'課程講師建議',text:`${e.date}「${rule.name||rule.category}」主講 ${lec.name} 不在來源表推薦/可安排名單，請人工確認。`})}});
+  ev.forEach(e=>{const lec=state.staff.lecturers.find(x=>x.id===e.lecturerId),host=state.staff.hosts.find(x=>x.id===e.hostId),txt=eventCourseText(e);if(e.type==='說明會'){if(lec&&lec.seminarQualified===false)w.push({title:'講師說明會資格',text:`${e.date} ${lec.name} 在來源名單未標示說明會主講資格 V，請確認。`,severe:true});if(host&&host.seminarQualified===false)w.push({title:'主持人說明會資格',text:`${e.date} ${host.name} 在來源名單未標示說明會資格 V，請確認。`,severe:true})}for(const p of [lec,host])if(p&&e.region&&Array.isArray(p.regions)&&p.regions.length&&!p.regions.includes(e.region))w.push({title:'支援區域確認',text:`${e.date} ${p.name} 名單支援區域為 ${p.regions.join('、')}，本次安排 ${e.region}，請人工確認。`});});
   for(const rule of (state.reference.schedulingRules||[]).filter(x=>x.type==='courseFrequency')){for(let mi=0;mi<3;mi++){const md=new Date(start.getFullYear(),start.getMonth()+mi,1),mk=monthKey(md);const n=ev.filter(e=>e.date.startsWith(mk)&&rule.match.some(t=>eventCourseText(e).includes(t))).length;if(rule.maxPerMonth&&n>rule.maxPerMonth)w.push({title:'課程頻率提示',text:`${mk}「${rule.match[0]}」共 ${n} 堂；${rule.message}`})}}
   return dedupeWarnings(w)
 }
@@ -804,27 +820,47 @@ function showStats(){
   <h3>各區合計</h3><table class="history-table"><tr><th>區域</th><th>人數</th></tr>${Object.entries(byRegion).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="2">尚無資料</td></tr>'}</table>
   <h3>課程合計</h3><table class="history-table"><tr><th>課程</th><th>人數</th></tr>${Object.entries(byCourse).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="2">尚無資料</td></tr>'}</table>`,`<button id="statsClose" class="primary">關閉</button>`);$('statsClose').onclick=closeModal
 }
+function ensureAdminRuleBlocks(){
+  state.meta=state.meta||{};
+  if(!Array.isArray(state.meta.adminRuleBlocks))state.meta.adminRuleBlocks=[];
+  if(!state.meta.adminRuleBlocks.length){
+    if(String(state.meta.adminSchedulingNotes||'').trim())state.meta.adminRuleBlocks.push({id:uid('rb'),title:'管理員備註',content:state.meta.adminSchedulingNotes});
+    if(String(state.meta.adminSchedulingRules||'').trim())state.meta.adminRuleBlocks.push({id:uid('rb'),title:'自訂排程規則',content:state.meta.adminSchedulingRules});
+    if(!state.meta.adminRuleBlocks.length)state.meta.adminRuleBlocks=[{id:uid('rb'),title:'管理員備註',content:''},{id:uid('rb'),title:'自訂排程規則',content:''}];
+  }
+  state.meta.adminRuleBlocks=state.meta.adminRuleBlocks.map(b=>({id:b.id||uid('rb'),title:String(b.title||''),content:String(b.content||'')}));
+  return state.meta.adminRuleBlocks;
+}
+function ruleBlockEditor(b){return `<div class="rule-block-card" data-id="${esc(b.id)}"><div class="rule-block-head"><input class="rule-block-title" value="${esc(b.title)}" placeholder="區塊標題，例如：北區排程規則"><div class="rule-block-actions"><button type="button" class="mini rule-up" title="上移">▲</button><button type="button" class="mini rule-down" title="下移">▼</button><button type="button" class="danger mini rule-delete">刪除</button></div></div><textarea class="rule-block-content" rows="6" placeholder="可自由輸入備註、規則、注意事項或新的排程原則。">${esc(b.content)}</textarea></div>`}
+function wireRuleBlocks(){
+  const box=$('adminRuleBlocks');if(!box)return;
+  box.querySelectorAll('.rule-block-card').forEach(card=>{
+    card.querySelector('.rule-delete').onclick=()=>card.remove();
+    card.querySelector('.rule-up').onclick=()=>{const p=card.previousElementSibling;if(p)box.insertBefore(card,p)};
+    card.querySelector('.rule-down').onclick=()=>{const n=card.nextElementSibling;if(n)box.insertBefore(n,card)};
+  });
+}
+function readRuleBlocks(){return [...document.querySelectorAll('#adminRuleBlocks .rule-block-card')].map(card=>({id:card.dataset.id||uid('rb'),title:card.querySelector('.rule-block-title').value.trim(),content:card.querySelector('.rule-block-content').value})).filter(x=>x.title||x.content)}
 function showHistory(){
-  const ref=state.reference||{};
-  const courseRows=(ref.courseCatalog||[]).map(c=>`<tr><td>${esc(c.category||c.name)}</td><td>${esc(c.name||'')}</td><td>${esc(c.frequency||'')}</td><td>${esc((c.recommendedLecturers||[]).join('、'))}</td><td>${esc((c.allowedLecturers||[]).join('、'))}</td></tr>`).join('');
-  openModal('排程規則 / 管理備註',`<div class="panel-note">來源資料仍保留供智慧排課判斷，但不再顯示過往月份與歷史安排資訊。管理員可在下方自行維護新的注意事項與排程規則。</div>
-  <div class="form-grid">
-    <label class="field span2"><span>管理員備註</span><textarea id="adminSchedulingNotes" rows="5" placeholder="例如：10 月份北區活動較多，台北講師請優先平均輪替。">${esc(state.meta.adminSchedulingNotes||'')}</textarea></label>
-    <label class="field span2"><span>自訂排程規則</span><textarea id="adminSchedulingRules" rows="7" placeholder="每行一條規則，例如：
-中壢健康回饋日優先排週日
-同一位主持人避免連續兩天排程">${esc(state.meta.adminSchedulingRules||'')}</textarea><small>此區為管理員維護的文字規則／提醒，會雲端同步；系統既有智慧檢查規則仍照常運作。</small></label>
-  </div>
-  <h3>課程規則與推薦</h3><div style="overflow:auto;max-height:34vh"><table class="history-table"><tr><th>類別</th><th>課程</th><th>頻率</th><th>推薦講師</th><th>可安排講師</th></tr>${courseRows||'<tr><td colspan="5">尚無課程規則</td></tr>'}</table></div>`,
-  `<button id="histClose" class="secondary">取消</button><button id="histSave" class="primary admin-only">儲存規則與備註</button>`);
+  ensureAdminRuleBlocks();
+  openModal('排程規則 / 管理備註',`<div class="panel-note"><b>舊的「課程規則與推薦名單」已停用並移除。</b><br>此頁改由管理員自行建立需要的規則/備註區塊；每個區塊都能改標題、內容、排序或刪除，並同步到 Railway PostgreSQL。</div>
+  <div class="toolbar-row"><button id="addRuleBlock" type="button" class="primary admin-only">＋ 新增區塊</button><span class="panel-note-inline">例如：北區規則、健康回饋日規則、講師輪替注意事項、臨時公告。</span></div>
+  <div id="adminRuleBlocks" class="rule-block-list">${state.meta.adminRuleBlocks.map(ruleBlockEditor).join('')}</div>`,
+  `<button id="histClose" class="secondary">取消</button><button id="histSave" class="primary admin-only">儲存並同步</button>`);
+  wireRuleBlocks();
+  $('addRuleBlock')?.addEventListener('click',()=>{const box=$('adminRuleBlocks');const b={id:uid('rb'),title:'新規則區塊',content:''};box.insertAdjacentHTML('beforeend',ruleBlockEditor(b));wireRuleBlocks();box.lastElementChild?.querySelector('.rule-block-title')?.focus()});
   $('histClose').onclick=closeModal;
   $('histSave')?.addEventListener('click',async()=>{
     try{
-      state.meta.adminSchedulingNotes=$('adminSchedulingNotes').value;
-      state.meta.adminSchedulingRules=$('adminSchedulingRules').value;
+      state.meta.adminRuleBlocks=readRuleBlocks();
+      // 舊欄位只保留相容性，不再作為畫面固定區塊。
+      state.meta.adminSchedulingNotes='';state.meta.adminSchedulingRules='';
+      state.reference=state.reference||{};state.reference.courseCatalog=[];state.reference.courseNameUpdates=[];
+      state.meta.legacyCourseRecommendationsRemoved=true;
       saveLocal();
       if(cloudReady&&state.mode==='admin')await pushCloudState(false);
       closeModal();
-      alert('管理備註與自訂排程規則已儲存並同步。');
+      alert('規則/備註區塊已儲存並同步；舊課程推薦名單已移除。');
     }catch(err){alert('儲存失敗：'+err.message)}
   });
 }
@@ -844,7 +880,7 @@ function getPlannerRange(){
 function inRangeDate(date,start,end){const d=parseDate(date);return d>=start&&d<end}
 function daysBetween(a,b){return Math.round((parseDate(b)-parseDate(a))/86400000)}
 function personById(id){return [...state.staff.lecturers,...state.staff.hosts,...state.staff.audio].find(p=>p.id===id)}
-function courseRuleForText(txt){return (state.reference.courseCatalog||[]).find(c=>(c.name&&txt.includes(c.name))||(c.category&&txt.includes(c.category)))}
+function courseRuleForText(txt){return null} // v11.16：舊課程推薦名單已停用；課程名稱改由管理員資料庫維護。
 function courseRuleForEditor(){
   const txt=[...document.querySelectorAll('.line-text')].map(x=>x.value).join(' ');
   return courseRuleForText(txt);
@@ -914,7 +950,7 @@ function smartSuggestForEditor(){
   if(chosenLecturer)$('evLecturerName').value=chosenLecturer.name;
   if(hosts[0]?.person)$('evHostName').value=hosts[0].person.name;
   const fmt=(x,role)=>`<div class="smart-candidate"><div><b>${esc(x.person.name)}</b> <span class="score-pill">${x.score} 分</span></div><div class="smart-reasons">${esc(x.reasons.slice(0,4).join('｜')||'符合一般輪替條件')}</div><button type="button" class="mini pick-candidate" data-role="${role}" data-id="${esc(x.person.id)}">選用</button></div>`;
-  $('smartSuggestBox').innerHTML=`<div class="smart-title">✨ 智慧推薦（已先選最高分人選）</div><div class="smart-columns"><div><b>講師 TOP 5</b>${lecturers.map(x=>fmt(x,'lecturer')).join('')}</div><div><b>主持人 TOP 5</b>${hosts.map(x=>fmt(x,'host')).join('')}</div></div><div class="panel-note">評分依三個月輪替、相鄰日期、每月安排次數、說明會資格、支援區域、課程推薦名單，主持/主講聘級與星級關係，以及已填寫人數的講師人數表現參考計算。人數只作輔助因子，不代表教學品質。此為排程輔助，仍由管理員最後確認。</div>`;
+  $('smartSuggestBox').innerHTML=`<div class="smart-title">✨ 智慧推薦（已先選最高分人選）</div><div class="smart-columns"><div><b>講師 TOP 5</b>${lecturers.map(x=>fmt(x,'lecturer')).join('')}</div><div><b>主持人 TOP 5</b>${hosts.map(x=>fmt(x,'host')).join('')}</div></div><div class="panel-note">評分依三個月輪替、相鄰日期、每月安排次數、說明會資格、支援區域、主持/主講聘級與星級關係，以及已填寫人數的講師人數表現參考計算。人數只作輔助因子，不代表教學品質。此為排程輔助，仍由管理員最後確認。</div>`;
   document.querySelectorAll('.pick-candidate').forEach(b=>b.onclick=()=>{{const list=b.dataset.role==='lecturer'?state.staff.lecturers:state.staff.hosts;const p=list.find(x=>x.id===b.dataset.id);if(!p)return;if(b.dataset.role==='lecturer')$('evLecturerName').value=p.name;else $('evHostName').value=p.name}});
 }
 function enhancedValidate3Months(){

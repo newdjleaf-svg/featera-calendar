@@ -215,3 +215,12 @@ body.admin-mode .day.blank[data-blank-key]:hover{box-shadow:inset 0 0 0 2px #7aa
 .global-color-dialog .color-swatch{width:34px;height:34px;border-radius:8px}
 .global-color-dialog .other-color{margin-top:2px;padding-top:12px;font-size:14px}
 .global-color-dialog .global-color-native{width:78px;height:42px;cursor:pointer}
+
+/* v11.16 管理員自訂規則區塊 */
+.rule-block-list{display:grid;gap:14px;margin-top:14px}
+.rule-block-card{border:1px solid #cfdacb;border-radius:14px;padding:14px;background:#fbfdf9}
+.rule-block-head{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:10px}
+.rule-block-title{font-weight:800;font-size:16px}
+.rule-block-actions{display:flex;gap:6px;align-items:center}
+.rule-block-content{width:100%;min-height:120px;resize:vertical;line-height:1.55}
+@media(max-width:700px){.rule-block-head{grid-template-columns:1fr}.rule-block-actions{justify-content:flex-end}}
