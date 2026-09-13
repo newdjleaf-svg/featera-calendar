@@ -203,7 +203,7 @@ function bind(){
   $('prevBtn').onclick=()=>changeMonth(-1);$('nextBtn').onclick=()=>changeMonth(1);$('todayBtn').onclick=()=>{const d=new Date();state.month=new Date(d.getFullYear(),d.getMonth(),1);renderAll()};
   $('monthPicker').onchange=e=>{if(e.target.value){const [y,m]=e.target.value.split('-').map(Number);state.month=new Date(y,m-1,1);renderAll()}};
   $('addEventBtn').onclick=()=>openEventEditor(null,ymd(state.month)); $('plannerBtn').onclick=showSmartPlanner; $('validateBtn').onclick=showValidation;
-  $('staffBtn').onclick=showStaff; $('audioBtn').onclick=()=>openAudioWorkspace(); $('layoutBtn').onclick=showLayout; $('appearanceBtn').onclick=showAppearance; $('settingsBtn').onclick=showSettings; $('statsBtn').onclick=showStats; $('historyBtn').onclick=showHistory;
+  $('staffBtn').onclick=showStaff; $('audioBtn').onclick=()=>openAudioWorkspace(); $('layoutBtn').onclick=showLayout; $('appearanceBtn').onclick=showAppearance; $('settingsBtn').onclick=showSettings; $('statsBtn').onclick=()=>showStats(); $('historyBtn').onclick=showHistory;
   $('exportBtn').onclick=exportPNG; $('exportPdfBtn').onclick=exportCalendarPDF; $('shareBtn').onclick=sharePNG; $('cloudBtn').onclick=showCloud;
   $('modalClose').onclick=closeModal; $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
   $('logoUpload').onchange=handleLogoUpload; bindAudioControls();
@@ -850,6 +850,8 @@ function statsAnalysisHtml(d){
   return `<div class="stat-cards"><div class="stat-card"><span>排程場次</span><br><b>${ev.length}</b></div><div class="stat-card"><span>已填人數場次</span><br><b>${filled.length}</b></div><div class="stat-card"><span>本月總人數</span><br><b>${total}</b></div><div class="stat-card"><span>已填場次平均</span><br><b>${avg}</b></div></div><div class="stats-analysis-grid"><div><h3>講師人數表現參考</h3><table class="history-table"><tr><th>講師</th><th>場次</th><th>合計</th><th>平均</th></tr>${lecturerRows.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.sessions}</td><td>${x.total}</td><td>${x.avg}</td></tr>`).join('')||'<tr><td colspan="4">尚無已填人數資料</td></tr>'}</table></div><div><h3>各區合計</h3><table class="history-table"><tr><th>區域</th><th>人數</th></tr>${Object.entries(byRegion).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="2">尚無資料</td></tr>'}</table></div><div><h3>課程合計</h3><table class="history-table"><tr><th>課程</th><th>人數</th></tr>${Object.entries(byCourse).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="2">尚無資料</td></tr>'}</table></div></div>`;
 }
 function showStats(monthDate=state.month){
+  // onclick 事件若直接傳入 MouseEvent，回退到目前月份，避免 getFullYear 例外導致按鈕無反應。
+  if(!(monthDate instanceof Date) || Number.isNaN(monthDate.getTime())) monthDate=state.month;
   const d=new Date(monthDate.getFullYear(),monthDate.getMonth(),1),mk=monthKey(d);
   openModal('每月課程人數統計',`<div class="stats-toolbar no-stats-export"><button id="statsPrev" class="secondary">‹ 上月</button><input id="statsMonthPicker" type="month" value="${mk}"><button id="statsNext" class="secondary">下月 ›</button><span class="panel-note-inline">行事曆「統計人數」一儲存即自動反映。點表格內課程可回到該筆行程編輯。</span></div><div class="monthly-stats-scroll">${monthlyHeadcountTableHtml(d)}</div>${statsAnalysisHtml(d)}`,
   `<button id="statsPng" class="primary">匯出 PNG</button><button id="statsPdf" class="secondary">匯出 PDF</button><button id="statsClose" class="secondary">關閉</button>`);
