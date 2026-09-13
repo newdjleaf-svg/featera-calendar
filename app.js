@@ -95,6 +95,7 @@ function contactStyleCss(st){return `font-size:${Number(st.size)||10.5}px;color:
 
 const state={
   month:new Date(2026,8,1), mode:'admin', view:'calendar', events:[], blankCells:{}, staff:{lecturers:[],hosts:[],audio:[]}, contacts:[],
+  statsMonth:new Date(2026,8,1),
   audioMonth:new Date(2026,8,1), audioState:{schedule:[],staff:[],meta:clone(DEFAULT_DJ_META)}, audioContext:{events:[],hosts:[]},
   meta:{titleTemplate:'{Y}年{M}月行事曆',subtitle:'',businessHours:'',hotline:'',logo:'',taiwanHolidays:true,appearance:clone(DEFAULT_APPEARANCE),adminSchedulingNotes:'',adminSchedulingRules:'',adminRuleBlocks:[],courseLibrary:[],deletedStaff:{lecturers:[],hosts:[]}}, admin:{...DEFAULT_ADMIN}, history:[], reference:{lecturers:[],hosts:[],courseCatalog:[],courseNameUpdates:[],schedulingRules:[]}
 };
@@ -203,10 +204,10 @@ function bind(){
   $('prevBtn').onclick=()=>changeMonth(-1);$('nextBtn').onclick=()=>changeMonth(1);$('todayBtn').onclick=()=>{const d=new Date();state.month=new Date(d.getFullYear(),d.getMonth(),1);renderAll()};
   $('monthPicker').onchange=e=>{if(e.target.value){const [y,m]=e.target.value.split('-').map(Number);state.month=new Date(y,m-1,1);renderAll()}};
   $('addEventBtn').onclick=()=>openEventEditor(null,ymd(state.month)); $('plannerBtn').onclick=showSmartPlanner; $('validateBtn').onclick=showValidation;
-  $('staffBtn').onclick=showStaff; $('audioBtn').onclick=()=>openAudioWorkspace(); $('layoutBtn').onclick=showLayout; $('appearanceBtn').onclick=showAppearance; $('settingsBtn').onclick=showSettings; $('statsBtn').onclick=()=>showStats(); $('historyBtn').onclick=showHistory;
+  $('staffBtn').onclick=showStaff; $('audioBtn').onclick=()=>openAudioWorkspace(); $('layoutBtn').onclick=showLayout; $('appearanceBtn').onclick=showAppearance; $('settingsBtn').onclick=showSettings; $('statsBtn').onclick=()=>openStatsWorkspace(); $('historyBtn').onclick=showHistory;
   $('exportBtn').onclick=exportPNG; $('exportPdfBtn').onclick=exportCalendarPDF; $('shareBtn').onclick=sharePNG; $('cloudBtn').onclick=showCloud;
   $('modalClose').onclick=closeModal; $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
-  $('logoUpload').onchange=handleLogoUpload; bindAudioControls();
+  $('logoUpload').onchange=handleLogoUpload; bindAudioControls(); bindStatsControls();
 }
 async function login(mode){
   state.mode=mode;state.view=mode==='dj'?'audio':'calendar';
@@ -563,7 +564,7 @@ function setLineColor(row,color,remember=true){
   if(hidden)hidden.value=c;if(native)native.value=c;if(chip)chip.style.background=c;
   if(remember){rememberLineColor(c);refreshRecentColorSwatches()}
 }
-function wireLineEditors(){document.querySelectorAll('.line-editor').forEach(row=>{
+function wireLineEditorsLegacyUnused(){document.querySelectorAll('.line-editor').forEach(row=>{
   row.querySelectorAll('.toggle').forEach(btn=>btn.onclick=()=>btn.classList.toggle('active'));
   row.querySelector('.remove-line').onclick=()=>row.remove();
   row.querySelector('.move-line-up').onclick=()=>{const prev=row.previousElementSibling;if(prev)row.parentNode.insertBefore(row,prev)};
@@ -849,22 +850,84 @@ function statsAnalysisHtml(d){
   const lecturerRows=Object.entries(byLecturer).map(([name,x])=>({name,...x,avg:Math.round(x.total/x.sessions)})).sort((a,b)=>b.avg-a.avg||b.total-a.total);
   return `<div class="stat-cards"><div class="stat-card"><span>排程場次</span><br><b>${ev.length}</b></div><div class="stat-card"><span>已填人數場次</span><br><b>${filled.length}</b></div><div class="stat-card"><span>本月總人數</span><br><b>${total}</b></div><div class="stat-card"><span>已填場次平均</span><br><b>${avg}</b></div></div><div class="stats-analysis-grid"><div><h3>講師人數表現參考</h3><table class="history-table"><tr><th>講師</th><th>場次</th><th>合計</th><th>平均</th></tr>${lecturerRows.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.sessions}</td><td>${x.total}</td><td>${x.avg}</td></tr>`).join('')||'<tr><td colspan="4">尚無已填人數資料</td></tr>'}</table></div><div><h3>各區合計</h3><table class="history-table"><tr><th>區域</th><th>人數</th></tr>${Object.entries(byRegion).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="2">尚無資料</td></tr>'}</table></div><div><h3>課程合計</h3><table class="history-table"><tr><th>課程</th><th>人數</th></tr>${Object.entries(byCourse).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="2">尚無資料</td></tr>'}</table></div></div>`;
 }
-function showStats(monthDate=state.month){
-  // onclick 事件若直接傳入 MouseEvent，回退到目前月份，避免 getFullYear 例外導致按鈕無反應。
-  if(!(monthDate instanceof Date) || Number.isNaN(monthDate.getTime())) monthDate=state.month;
-  const d=new Date(monthDate.getFullYear(),monthDate.getMonth(),1),mk=monthKey(d);
-  openModal('每月課程人數統計',`<div class="stats-toolbar no-stats-export"><button id="statsPrev" class="secondary">‹ 上月</button><input id="statsMonthPicker" type="month" value="${mk}"><button id="statsNext" class="secondary">下月 ›</button><span class="panel-note-inline">行事曆「統計人數」一儲存即自動反映。點表格內課程可回到該筆行程編輯。</span></div><div class="monthly-stats-scroll">${monthlyHeadcountTableHtml(d)}</div>${statsAnalysisHtml(d)}`,
-  `<button id="statsPng" class="primary">匯出 PNG</button><button id="statsPdf" class="secondary">匯出 PDF</button><button id="statsClose" class="secondary">關閉</button>`);
-  $('statsClose').onclick=closeModal;
-  $('statsPrev').onclick=()=>showStats(new Date(d.getFullYear(),d.getMonth()-1,1));
-  $('statsNext').onclick=()=>showStats(new Date(d.getFullYear(),d.getMonth()+1,1));
-  $('statsMonthPicker').onchange=e=>{if(e.target.value){const [y,m]=e.target.value.split('-').map(Number);showStats(new Date(y,m-1,1))}};
-  $('statsPng').onclick=()=>exportMonthlyStatsPNG(d);$('statsPdf').onclick=()=>exportMonthlyStatsPDF(d);
-  document.querySelectorAll('[data-stats-event-id]').forEach(td=>td.onclick=()=>{if(state.mode==='admin')openEventEditor(td.dataset.statsEventId)});
+function ensureMonthlyStatsMeta(){
+  state.meta=state.meta||{};
+  if(!state.meta.monthlyStatsOverrides||typeof state.meta.monthlyStatsOverrides!=='object')state.meta.monthlyStatsOverrides={};
+  return state.meta.monthlyStatsOverrides;
+}
+function statsDefaultLinesForDate(date){
+  const events=state.events.filter(e=>e.date===date&&e.type!=='假日/休假').sort((a,b)=>(a.order||0)-(b.order||0));
+  const lines=[];
+  events.forEach((e,idx)=>{
+    const course=statsEventCourseName(e),region=e.region||'';
+    const first=[region,course].filter(Boolean).join('-')||course||region||'課程';
+    lines.push({text:first,size:15,color:'#075dd0',align:'center',bold:true,italic:false,underline:false});
+    const lecturer=statsLecturerText(e);
+    if(lecturer)lines.push({text:lecturer,size:12,color:'#111111',align:'center',bold:true,italic:false,underline:false});
+    const n=(+e.headcount||0)>0?String(+e.headcount):'未填';
+    lines.push({text:n,size:14,color:(+e.headcount||0)>0?'#111111':'#999999',align:'center',bold:true,italic:false,underline:false});
+    if(idx<events.length-1)lines.push({text:'',size:7,color:'#111111',align:'center',bold:false,italic:false,underline:false});
+  });
+  return lines;
+}
+function statsLinesForDate(date){
+  const overrides=ensureMonthlyStatsMeta();
+  return Array.isArray(overrides[date]?.lines)?overrides[date].lines:statsDefaultLinesForDate(date);
+}
+function statsCellLineHtml(line,idx){
+  const size=Number(line.size)||13,txt=lineText(line);
+  const st=`font-size:${size}px;line-height:1.2;min-height:${Math.max(size*1.2,10)}px;color:${esc(line.color||'#111')};text-align:${line.align||'center'};font-weight:${line.bold?'900':'400'};font-style:${line.italic?'italic':'normal'};text-decoration:${line.underline?'underline':'none'}`;
+  return `<div class="stats-cell-line ${txt.trim()?'':'blank-calendar-line'}" style="${st}">${renderInlineSegments(line)}</div>`;
+}
+function renderStatsCalendar(){
+  ensureMonthlyStatsMeta();
+  const d=state.statsMonth instanceof Date&&!Number.isNaN(state.statsMonth)?state.statsMonth:state.month;
+  const y=d.getFullYear(),m=d.getMonth(),first=new Date(y,m,1),days=new Date(y,m+1,0).getDate(),offset=(first.getDay()+6)%7,weeks=Math.ceil((offset+days)/7);
+  $('statsPageMonthPicker').value=monthKey(d);
+  $('statsPageTitle').textContent=`${y}年${m+1}月份課程人數統計`;
+  const wds=['星期一','星期二','星期三','星期四','星期五','星期六','星期日'];
+  $('statsWeekdayRow').innerHTML=wds.map((x,i)=>`<div class="stats-weekday ${i>=5?'weekend':''}">${x}</div>`).join('');
+  let html='';
+  for(let i=0;i<weeks*7;i++){
+    const day=i-offset+1;
+    if(day<1||day>days){html+='<div class="stats-day blank"></div>';continue}
+    const date=ymd(new Date(y,m,day)),lines=statsLinesForDate(date),dow=new Date(y,m,day).getDay(),hasOverride=!!state.meta.monthlyStatsOverrides?.[date];
+    html+=`<div class="stats-day ${dow===0||dow===6?'weekend':''} ${hasOverride?'has-override':''}" data-stats-date="${date}"><div class="stats-date-strip">${day}</div><div class="stats-day-lines">${lines.map(statsCellLineHtml).join('')}</div>${hasOverride?'<span class="stats-custom-badge no-stats-export">自訂</span>':''}</div>`;
+  }
+  $('statsCalendarGrid').innerHTML=html;
+  if(state.mode==='admin')document.querySelectorAll('#statsCalendarGrid .stats-day[data-stats-date]').forEach(el=>el.onclick=()=>openStatsCellEditor(el.dataset.statsDate));
+  $('statsAnalysisPanel').innerHTML=statsAnalysisHtml(d);
+}
+function bindStatsControls(){
+  $('statsBackBtn').onclick=()=>showCalendarWorkspace();
+  $('statsPagePrevBtn').onclick=()=>{state.statsMonth=new Date(state.statsMonth.getFullYear(),state.statsMonth.getMonth()-1,1);renderStatsCalendar()};
+  $('statsPageNextBtn').onclick=()=>{state.statsMonth=new Date(state.statsMonth.getFullYear(),state.statsMonth.getMonth()+1,1);renderStatsCalendar()};
+  $('statsPageMonthPicker').onchange=e=>{if(e.target.value){const [y,m]=e.target.value.split('-').map(Number);state.statsMonth=new Date(y,m-1,1);renderStatsCalendar()}};
+  $('statsResetMonthBtn').onclick=()=>{const mk=monthKey(state.statsMonth);if(!confirm(`確定清除 ${mk} 的統計表自訂內容，恢復由行事曆自動帶入？`))return;const o=ensureMonthlyStatsMeta();Object.keys(o).filter(k=>k.startsWith(mk+'-')).forEach(k=>delete o[k]);saveLocal();renderStatsCalendar()};
+  $('statsPagePngBtn').onclick=()=>exportMonthlyStatsPNG(state.statsMonth);
+  $('statsPagePdfBtn').onclick=()=>exportMonthlyStatsPDF(state.statsMonth);
+}
+function openStatsWorkspace(monthDate=state.month){
+  if(monthDate instanceof Date&&!Number.isNaN(monthDate.getTime()))state.statsMonth=new Date(monthDate.getFullYear(),monthDate.getMonth(),1);
+  state.view='stats';$('calendarWorkspace').classList.add('hidden');$('djWorkspace').classList.add('hidden');$('statsWorkspace').classList.remove('hidden');
+  document.body.classList.add('stats-mode');if(state.mode==='admin')$('sidebar').classList.add('hidden');renderStatsCalendar();
+}
+function showStats(monthDate=state.month){openStatsWorkspace(monthDate)}
+function openStatsCellEditor(date){
+  if(state.mode!=='admin')return;
+  const current=clone(statsLinesForDate(date));
+  const linked=!state.meta.monthlyStatsOverrides?.[date];
+  openModal(`每月人數統計｜${date}`,`<div class="panel-note"><b>${linked?'目前由行事曆自動帶入':'此格已使用獨立自訂內容'}</b>。在此修改只會改變每月人數統計頁，不會覆蓋主行事曆。需要重新同步行事曆內容時，可按「重新從行事曆帶入」。</div><div class="toolbar-row"><button id="statsAddLineBtn" type="button" class="secondary">＋ 新增一行</button><button id="statsAddSpaceBtn" type="button" class="secondary">＋ 空白間距行</button></div><div id="statsLineEditors">${lineEditorHtml(current)}</div>`, `<button id="statsResetCellBtn" class="secondary">重新從行事曆帶入</button><button id="statsEditCancelBtn" class="secondary">取消</button><button id="statsEditSaveBtn" class="primary">儲存統計版面</button>`);
+  wireLineEditors($('statsLineEditors'));
+  $('statsAddLineBtn').onclick=()=>appendDisplayLine({text:'',size:13,color:'#111111',align:'center',bold:false,italic:false,underline:false},'statsLineEditors');
+  $('statsAddSpaceBtn').onclick=()=>appendDisplayLine({text:'',size:10,color:'#111111',align:'center',bold:false,italic:false,underline:false},'statsLineEditors');
+  $('statsEditCancelBtn').onclick=closeModal;
+  $('statsResetCellBtn').onclick=()=>{const o=ensureMonthlyStatsMeta();delete o[date];saveLocal();closeModal();renderStatsCalendar()};
+  $('statsEditSaveBtn').onclick=()=>{const lines=collectLines('statsLineEditors');lines.forEach(l=>{rememberLineColor(l.color);(l.segments||[]).forEach(x=>rememberLineColor(x.color))});ensureMonthlyStatsMeta()[date]={lines,updatedAt:new Date().toISOString()};saveLocal();closeModal();renderStatsCalendar()};
 }
 async function makeMonthlyStatsCanvas(){
   const el=$('monthlyStatsExportArea');if(!el)throw new Error('找不到每月人數統計表');
-  await new Promise(r=>setTimeout(r,60));return html2canvas(el,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,width:el.scrollWidth,height:el.scrollHeight,windowWidth:Math.max(document.documentElement.clientWidth,el.scrollWidth)});
+  document.body.classList.add('exporting-stats');await new Promise(r=>setTimeout(r,80));try{return await html2canvas(el,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,width:el.scrollWidth,height:el.scrollHeight,windowWidth:Math.max(document.documentElement.clientWidth,el.scrollWidth)})}finally{document.body.classList.remove('exporting-stats')}
 }
 async function exportMonthlyStatsPNG(d){try{const canvas=await makeMonthlyStatsCanvas(),a=document.createElement('a');a.download=`FEATERA_${monthKey(d)}_每月課程人數統計.png`;a.href=canvas.toDataURL('image/png');a.click()}catch(e){alert('每月人數統計 PNG 匯出失敗：'+e.message)}}
 async function exportMonthlyStatsPDF(d){try{const canvas=await makeMonthlyStatsCanvas();downloadCanvasPDF(canvas,`FEATERA_${monthKey(d)}_每月課程人數統計.pdf`)}catch(e){alert('每月人數統計 PDF 匯出失敗：'+e.message)}}
@@ -1097,11 +1160,11 @@ function bindAudioControls(){
   $('djExportBtn').onclick=exportAudioPNG;$('djExportPdfBtn').onclick=exportAudioPDF;$('djShareBtn').onclick=shareAudioPNG;
 }
 function showCalendarWorkspace(){
-  state.view='calendar';$('calendarWorkspace').classList.remove('hidden');$('djWorkspace').classList.add('hidden');
-  if(state.mode==='admin')$('sidebar').classList.remove('hidden');renderAll();
+  state.view='calendar';$('calendarWorkspace').classList.remove('hidden');$('djWorkspace').classList.add('hidden');$('statsWorkspace').classList.add('hidden');
+  if(state.mode==='admin')$('sidebar').classList.remove('hidden');document.body.classList.remove('stats-mode');renderAll();
 }
 async function openAudioWorkspace(sync=true){
-  state.view='audio';$('calendarWorkspace').classList.add('hidden');$('djWorkspace').classList.remove('hidden');
+  state.view='audio';$('calendarWorkspace').classList.add('hidden');$('statsWorkspace').classList.add('hidden');$('djWorkspace').classList.remove('hidden');document.body.classList.remove('stats-mode');
   if(sync){try{await pullAudioState()}catch(e){alert(e.message)}}
   renderAudioSheet();
 }

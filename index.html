@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=11.18.0" />
+  <link rel="stylesheet" href="style.css?v=11.19.0" />
 </head>
 <body>
   <section id="loginView" class="login-view">
@@ -133,6 +133,31 @@
         <div id="djTableWrap" class="dj-table-wrap"></div>
       </section>
     </main>
+    <main id="statsWorkspace" class="workspace stats-workspace hidden">
+      <section class="stats-console no-stats-export">
+        <div class="stats-page-toolbar">
+          <div>
+            <strong>📊 每月人數統計</strong>
+            <span class="panel-note-inline">預設調用當月行事曆排程；此頁修改只影響統計版面，不回寫行事曆。</span>
+          </div>
+          <div class="toolbar-row">
+            <button id="statsBackBtn" class="secondary">← 回行事曆</button>
+            <button id="statsPagePrevBtn" class="secondary">‹ 上月</button>
+            <input id="statsPageMonthPicker" type="month">
+            <button id="statsPageNextBtn" class="secondary">下月 ›</button>
+            <button id="statsResetMonthBtn" class="secondary admin-only">重設本月為行事曆資料</button>
+            <button id="statsPagePngBtn" class="primary">匯出 PNG</button>
+            <button id="statsPagePdfBtn" class="secondary">匯出 PDF</button>
+          </div>
+        </div>
+      </section>
+      <section id="monthlyStatsExportArea" class="stats-calendar-sheet">
+        <div id="statsPageTitle" class="stats-calendar-title">2026年9月份課程人數統計</div>
+        <div id="statsWeekdayRow" class="stats-weekday-row"></div>
+        <div id="statsCalendarGrid" class="stats-calendar-grid"></div>
+      </section>
+      <section id="statsAnalysisPanel" class="stats-analysis-panel no-stats-export"></section>
+    </main>
   </div>
 
   <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
@@ -149,6 +174,6 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
   
-  <script src="app.js?v=11.18.0"></script>
+  <script src="app.js?v=11.19.0"></script>
 </body>
 </html>
