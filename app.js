@@ -96,7 +96,7 @@ function contactStyleCss(st){return `font-size:${Number(st.size)||10.5}px;color:
 const state={
   month:new Date(2026,8,1), mode:'admin', view:'calendar', events:[], blankCells:{}, staff:{lecturers:[],hosts:[],audio:[]}, contacts:[],
   audioMonth:new Date(2026,8,1), audioState:{schedule:[],staff:[],meta:clone(DEFAULT_DJ_META)}, audioContext:{events:[],hosts:[]},
-  meta:{titleTemplate:'{Y}年{M}月行事曆',subtitle:'',businessHours:'',hotline:'',logo:'',taiwanHolidays:true,appearance:clone(DEFAULT_APPEARANCE)}, admin:{...DEFAULT_ADMIN}, history:[], reference:{lecturers:[],hosts:[],courseCatalog:[],courseNameUpdates:[],schedulingRules:[]}
+  meta:{titleTemplate:'{Y}年{M}月行事曆',subtitle:'',businessHours:'',hotline:'',logo:'',taiwanHolidays:true,appearance:clone(DEFAULT_APPEARANCE),adminSchedulingNotes:'',adminSchedulingRules:'',deletedStaff:{lecturers:[],hosts:[]}}, admin:{...DEFAULT_ADMIN}, history:[], reference:{lecturers:[],hosts:[],courseCatalog:[],courseNameUpdates:[],schedulingRules:[]}
 };
 let cloudReady=false;
 let cloudSaveTimer=null;
@@ -121,7 +121,7 @@ async function pullCloudState(){
   const r=await fetch('/api/state',{cache:'no-store'});
   if(!r.ok)throw new Error('雲端讀取失敗 ('+r.status+')');
   const data=await r.json();
-  if(data?.payload&&Object.keys(data.payload).length){Object.assign(state,data.payload);mergeReferenceIntoStaff();localStorage.setItem(LS_KEY,JSON.stringify({...data.payload,admin:state.admin}));return true}
+  if(data?.payload&&Object.keys(data.payload).length){Object.assign(state,data.payload);ensureDeletedStaffMeta();mergeReferenceIntoStaff();localStorage.setItem(LS_KEY,JSON.stringify({...data.payload,admin:state.admin}));return true}
   return false;
 }
 async function pushCloudState(showMessage=true){
@@ -149,15 +149,48 @@ async function loadSeed(){
   ];
   mergeReferenceIntoStaff();
 }
+function ensureDeletedStaffMeta(){
+  state.meta=state.meta||{};
+  state.meta.deletedStaff=state.meta.deletedStaff||{lecturers:[],hosts:[]};
+  for(const k of ['lecturers','hosts'])if(!Array.isArray(state.meta.deletedStaff[k]))state.meta.deletedStaff[k]=[];
+  return state.meta.deletedStaff;
+}
+function rememberDeletedStaff(kind,person){
+  if(!person)return;
+  const ds=ensureDeletedStaffMeta();
+  const name=String(person.name||'').trim();
+  if(name&&!ds[kind].includes(name))ds[kind].push(name);
+}
+function clearDeletedStaffIfRestored(){
+  const ds=ensureDeletedStaffMeta();
+  for(const kind of ['lecturers','hosts']){
+    const current=new Set((state.staff?.[kind]||[]).map(p=>String(p.name||'').trim()).filter(Boolean));
+    ds[kind]=ds[kind].filter(name=>!current.has(name));
+  }
+}
 function mergeReferenceIntoStaff(){
-  const merge=(list,refs)=>{for(const p of list){const r=(refs||[]).find(x=>x.name===p.name);if(!r)continue;for(const k of ['seminarQualified','regions','seniority'])if((p[k]===undefined||p[k]===null||p[k]===''||(Array.isArray(p[k])&&!p[k].length))&&r[k]!==undefined)p[k]=clone(r[k]);if(!p.note&&r.note)p.note=r.note;if(p.stars===undefined&&r.stars!==undefined)p.stars=r.stars;if(!p.rank&&r.rank)p.rank=r.rank;}for(const r of (refs||[])){if(!list.some(x=>x.name===r.name))list.push(clone(r))}};
-  merge(state.staff.lecturers,state.reference?.lecturers);merge(state.staff.hosts,state.reference?.hosts);ensureSpecialStaffTitles();
+  const deleted=ensureDeletedStaffMeta();
+  const merge=(kind,list,refs)=>{
+    for(const p of list){
+      const r=(refs||[]).find(x=>x.name===p.name);if(!r)continue;
+      for(const k of ['seminarQualified','regions','seniority'])if((p[k]===undefined||p[k]===null||p[k]===''||(Array.isArray(p[k])&&!p[k].length))&&r[k]!==undefined)p[k]=clone(r[k]);
+      if(!p.note&&r.note)p.note=r.note;if(p.stars===undefined&&r.stars!==undefined)p.stars=r.stars;if(!p.rank&&r.rank)p.rank=r.rank;
+    }
+    for(const r of (refs||[])){
+      if(deleted[kind].includes(String(r.name||'').trim()))continue;
+      if(!list.some(x=>x.name===r.name))list.push(clone(r));
+    }
+  };
+  merge('lecturers',state.staff.lecturers,state.reference?.lecturers);
+  merge('hosts',state.staff.hosts,state.reference?.hosts);
+  ensureSpecialStaffTitles();
 }
 function eventCourseText(e){return (e.lines||[]).map(x=>x.text||'').join(' ')}
 function nameMatch(list,name){return (list||[]).some(x=>{const n=String(x).replace(/\(.*?\)/g,'').replace(/^(圓夢計畫-)/,'').trim();return n&&name.includes(n)})}
 async function initialize(){
   await loadSeed();
   try{const saved=JSON.parse(localStorage.getItem(LS_KEY)||'null');if(saved)Object.assign(state,saved)}catch{}
+  ensureDeletedStaffMeta();
   ensureSpecialStaffTitles();
   bind(); renderAll();
 }
@@ -647,7 +680,7 @@ function showStaff(){
       <div class="panel-note">修改星級、聘級或自訂頭銜會立即更新右側「自動顯示」。自訂頭銜有填寫時會優先顯示；按儲存後，已排定行事曆中的主持人／講師文字也會同步更新。黃致堯預設為「總經理」，文林生預設為「藥師」。</div>
       <div class="toolbar-row"><button id="addStaff" class="primary">＋ 新增人員</button></div>
       <div style="overflow:auto;max-height:65vh"><table class="staff-table"><thead><tr><th>姓名</th>${isL?'<th>星級</th><th>聘級</th>':'<th>聘級</th>'}<th>自訂頭銜</th><th>自動顯示</th>${isL?'<th>特聘/顧問</th>':''}<th>備註</th><th></th></tr></thead><tbody>
-      ${list.map(p=>`<tr data-id="${p.id}"><td><input class="s-name" value="${esc(p.name)}"></td>${isL?`<td><select class="s-stars">${[0,1,2,3].map(n=>`<option value="${n}" ${p.stars==n?'selected':''}>${n?`${n}星`:'無'}</option>`).join('')}</select></td><td><select class="s-rank">${rankOptions(p)}</select></td>`:`<td><select class="s-rank">${rankOptions(p)}</select></td>`}<td><input class="s-title" value="${esc(p.customTitle||'')}" placeholder="例如：總經理／藥師／顧問"></td><td><input class="s-auto-display" value="${esc(staffAutoDisplay(p,active))}" readonly></td>${isL?`<td><input class="s-special" type="checkbox" ${p.special?'checked':''}></td>`:''}<td><input class="s-note" value="${esc(p.note||'')}" title="${esc([p.seminarQualified?'說明會資格V':'',p.regions?.length?'支援:'+p.regions.join('、'):'',p.seniority||''].filter(Boolean).join('｜'))}"><div style="font-size:11px;color:#666;margin-top:3px">${esc([p.seminarQualified?'說明會V':'',p.regions?.length?p.regions.join('、'):'',p.seniority||''].filter(Boolean).join('｜'))}</div></td><td><button class="danger mini s-del">刪</button></td></tr>`).join('')}
+      ${list.map(p=>`<tr data-id="${p.id}"><td><input class="s-name" value="${esc(p.name)}"></td>${isL?`<td><select class="s-stars">${[0,1,2,3].map(n=>`<option value="${n}" ${p.stars==n?'selected':''}>${n?`${n}星`:'無'}</option>`).join('')}</select></td><td><select class="s-rank">${rankOptions(p)}</select></td>`:`<td><select class="s-rank">${rankOptions(p)}</select></td>`}<td><input class="s-title" value="${esc(p.customTitle||'')}" placeholder="例如：總經理／藥師／顧問"></td><td><input class="s-auto-display" value="${esc(staffAutoDisplay(p,active))}" readonly></td>${isL?`<td><input class="s-special" type="checkbox" ${p.special?'checked':''}></td>`:''}<td><input class="s-note" value="${esc(p.note||'')}"></td><td><button class="danger mini s-del">刪</button></td></tr>`).join('')}
       </tbody></table></div>`;
     document.querySelectorAll('#modalBody .tab').forEach(b=>b.onclick=()=>{commitVisible();active=b.dataset.tab;draw()});
     $('addStaff').onclick=()=>{commitVisible();const obj={id:uid(active[0]),name:'新成員',note:''};if(active==='lecturers')Object.assign(obj,{stars:1,rank:'',special:false,customTitle:''});else Object.assign(obj,{rank:'SM',stars:0,customTitle:''});state.staff[active].push(obj);draw()};
@@ -656,7 +689,7 @@ function showStaff(){
       tr.querySelector('.s-rank')?.addEventListener('change',refresh);
       tr.querySelector('.s-stars')?.addEventListener('change',refresh);
       tr.querySelector('.s-title')?.addEventListener('input',refresh);
-      tr.querySelector('.s-del').onclick=()=>{if(!confirm('確定刪除此人員？'))return;commitVisible();state.staff[active]=state.staff[active].filter(x=>x.id!==tr.dataset.id);draw()};
+      tr.querySelector('.s-del').onclick=()=>{if(!confirm('確定刪除此人員？'))return;commitVisible();const person=state.staff[active].find(x=>x.id===tr.dataset.id);rememberDeletedStaff(active,person);state.staff[active]=state.staff[active].filter(x=>x.id!==tr.dataset.id);draw()};
     });
   };
   openModal('講師 / 主持人名單','',`<button id="staffCancel" class="secondary">取消</button><button id="staffSave" class="primary">儲存並同步</button>`);
@@ -670,6 +703,7 @@ function showStaff(){
     try{
       btn.disabled=true;btn.textContent='儲存中…';
       commitVisible();
+      clearDeletedStaffIfRestored();
       syncScheduledPersonText(beforeById);
       saveLocal();renderAll();
       if(cloudReady&&state.mode==='admin')await pushCloudState(false);
@@ -770,7 +804,30 @@ function showStats(){
   <h3>各區合計</h3><table class="history-table"><tr><th>區域</th><th>人數</th></tr>${Object.entries(byRegion).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="2">尚無資料</td></tr>'}</table>
   <h3>課程合計</h3><table class="history-table"><tr><th>課程</th><th>人數</th></tr>${Object.entries(byCourse).sort((a,b)=>b[1]-a[1]).map(([r,c])=>`<tr><td>${esc(r)}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="2">尚無資料</td></tr>'}</table>`,`<button id="statsClose" class="primary">關閉</button>`);$('statsClose').onclick=closeModal
 }
-function showHistory(){const ref=state.reference||{};const courseRows=(ref.courseCatalog||[]).map(c=>`<tr><td>${esc(c.category||c.name)}</td><td>${esc(c.name||'')}</td><td>${esc(c.frequency||'')}</td><td>${esc((c.recommendedLecturers||[]).join('、'))}</td><td>${esc((c.allowedLecturers||[]).join('、'))}</td></tr>`).join('');openModal('排程資料庫 / 歷史參考',`<div class="panel-note"><b>已整合「課程行事曆安排(1).xlsx」</b><br>講師 ${(ref.lecturers||[]).length} 人、主持人 ${(ref.hosts||[]).length} 人，並將說明會資格、支援區域、年資、課程頻率與推薦講師納入排程提示。</div><h3>課程規則與推薦</h3><div style="overflow:auto;max-height:38vh"><table class="history-table"><tr><th>類別</th><th>課程</th><th>頻率</th><th>推薦講師</th><th>可安排講師</th></tr>${courseRows}</table></div><h3>課程名稱更新</h3><table class="history-table"><tr><th>原名稱</th><th>更新名稱</th></tr>${(ref.courseNameUpdates||[]).filter(x=>x.new).map(x=>`<tr><td>${esc(x.old)}</td><td>${esc(x.new)}</td></tr>`).join('')}</table><h3>既有歷史摘要</h3><table class="history-table"><tr><th>月份</th><th>摘要</th></tr>${state.history.map(h=>`<tr><td>${esc(h.month)}</td><td>${esc(h.note)}</td></tr>`).join('')}</table>`,`<button id="histClose" class="primary">關閉</button>`);$('histClose').onclick=closeModal}
+function showHistory(){
+  const ref=state.reference||{};
+  const courseRows=(ref.courseCatalog||[]).map(c=>`<tr><td>${esc(c.category||c.name)}</td><td>${esc(c.name||'')}</td><td>${esc(c.frequency||'')}</td><td>${esc((c.recommendedLecturers||[]).join('、'))}</td><td>${esc((c.allowedLecturers||[]).join('、'))}</td></tr>`).join('');
+  openModal('排程規則 / 管理備註',`<div class="panel-note">來源資料仍保留供智慧排課判斷，但不再顯示過往月份與歷史安排資訊。管理員可在下方自行維護新的注意事項與排程規則。</div>
+  <div class="form-grid">
+    <label class="field span2"><span>管理員備註</span><textarea id="adminSchedulingNotes" rows="5" placeholder="例如：10 月份北區活動較多，台北講師請優先平均輪替。">${esc(state.meta.adminSchedulingNotes||'')}</textarea></label>
+    <label class="field span2"><span>自訂排程規則</span><textarea id="adminSchedulingRules" rows="7" placeholder="每行一條規則，例如：
+中壢健康回饋日優先排週日
+同一位主持人避免連續兩天排程">${esc(state.meta.adminSchedulingRules||'')}</textarea><small>此區為管理員維護的文字規則／提醒，會雲端同步；系統既有智慧檢查規則仍照常運作。</small></label>
+  </div>
+  <h3>課程規則與推薦</h3><div style="overflow:auto;max-height:34vh"><table class="history-table"><tr><th>類別</th><th>課程</th><th>頻率</th><th>推薦講師</th><th>可安排講師</th></tr>${courseRows||'<tr><td colspan="5">尚無課程規則</td></tr>'}</table></div>`,
+  `<button id="histClose" class="secondary">取消</button><button id="histSave" class="primary admin-only">儲存規則與備註</button>`);
+  $('histClose').onclick=closeModal;
+  $('histSave')?.addEventListener('click',async()=>{
+    try{
+      state.meta.adminSchedulingNotes=$('adminSchedulingNotes').value;
+      state.meta.adminSchedulingRules=$('adminSchedulingRules').value;
+      saveLocal();
+      if(cloudReady&&state.mode==='admin')await pushCloudState(false);
+      closeModal();
+      alert('管理備註與自訂排程規則已儲存並同步。');
+    }catch(err){alert('儲存失敗：'+err.message)}
+  });
+}
 
 async function makeCanvas(){document.body.classList.add('exporting');await new Promise(r=>setTimeout(r,80));const sheet=$('sheet');const canvas=await html2canvas(sheet,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,width:sheet.scrollWidth,height:sheet.scrollHeight});document.body.classList.remove('exporting');return canvas}
 async function exportPNG(){try{const canvas=await makeCanvas();const a=document.createElement('a');a.download=`FEATERA_${$('calendarTitle').textContent}.png`;a.href=canvas.toDataURL('image/png');a.click()}catch(e){document.body.classList.remove('exporting');alert('匯出失敗：'+e.message)}}
