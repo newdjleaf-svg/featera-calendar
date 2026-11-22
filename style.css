@@ -258,3 +258,35 @@ body.stats-mode .stats-workspace{margin-left:0!important}
 .exporting-stats .no-stats-export{display:none!important}
 .exporting-stats .stats-calendar-sheet{box-shadow:none!important;margin:0!important;width:1580px!important;min-width:1580px!important}
 @media(max-width:900px){.stats-workspace{margin-left:0!important;padding:8px;overflow:auto}.stats-calendar-sheet,.stats-analysis-panel{min-width:1120px}.stats-page-toolbar{align-items:flex-start}.stats-page-toolbar .toolbar-row{width:100%;overflow-x:auto;flex-wrap:nowrap}.stats-page-toolbar button,.stats-page-toolbar input{white-space:nowrap}.stats-calendar-title{font-size:26px}}
+
+
+/* v11.20：音控同日人數不限，內容逐筆顯示且不裁切 */
+.dj-calendar-table tr.dj-audio-row th,
+.dj-calendar-table tr.dj-audio-row td{
+  height:auto;
+  min-height:42px;
+  vertical-align:top;
+  overflow:visible;
+}
+.dj-calendar-table tr.dj-audio-row .dj-cell{
+  overflow:visible;
+  padding-top:5px;
+  padding-bottom:5px;
+}
+.dj-calendar-table tr.dj-audio-row .dj-entry{
+  display:block;
+  width:100%;
+  min-height:1.25em;
+  height:auto;
+  margin:0;
+  padding:2px 0;
+  line-height:1.35;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  overflow:visible;
+}
+.dj-calendar-table tr.dj-audio-row .dj-entry + .dj-entry{
+  border-top:1px solid rgba(0,0,0,.12);
+  margin-top:2px;
+  padding-top:4px;
+}
