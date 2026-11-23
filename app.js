@@ -1,12 +1,11 @@
 const $ = (id)=>document.getElementById(id);
 const LS_KEY='featera_calendar_v3';
 const CONFIG_KEY='featera_calendar_config_v1';
-const DEFAULT_ADMIN={user:'Featera',pass:'featera168'};
+const DEFAULT_ADMIN={user:'Featera',pass:''};
 const RANKS=['SM','GM','PM','SD','GD','PD','SP','GP','PP','DP','DDP'];
 const RANK_ZH={SM:'經理',GM:'經理',PM:'經理',SD:'總監',GD:'總監',PD:'總監',SP:'總裁',GP:'總裁',PP:'總裁',DP:'總裁',DDP:'總裁'};
 function rankWithZh(rank){return rank?`${rank} ${RANK_ZH[rank]||''}`.trim():''}
 const REGIONS=['台北','中壢','宜蘭','花蓮','台中','嘉義','台南','高雄','台東'];
-const COURSE_TYPES=['系統培訓','健康回饋日','說明會','NDO/希望工程','MCC','會議','假日/休假','其他'];
 
 const DJ_USER_DEFAULT='featera_dj';
 const DJ_REGIONS=['高雄','花蓮','宜蘭','嘉義','台南','中壢','台北','台中','台東'];

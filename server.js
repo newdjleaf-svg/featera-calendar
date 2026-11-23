@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
+const { initReports, registerReportRoutes } = require('./reports');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -10,9 +11,11 @@ if (!DATABASE_URL) { console.error('DATABASE_URL is missing'); process.exit(1); 
 
 const pool = new Pool({ connectionString: DATABASE_URL, max: 5, idleTimeoutMillis: 30000 });
 const ADMIN_USER = process.env.ADMIN_USER || 'Featera';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'featera168';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const DJ_USER = process.env.DJ_USER || 'featera_dj';
-const DJ_PASSWORD = process.env.DJ_PASSWORD || 'featera168';
+const DJ_PASSWORD = process.env.DJ_PASSWORD;
+const FRONTDESK_USER = process.env.FRONTDESK_USER;
+const FRONTDESK_PASSWORD = process.env.FRONTDESK_PASSWORD;
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.createHash('sha256').update(DATABASE_URL).digest('hex');
 
 app.use(express.json({ limit: '12mb' }));
@@ -20,16 +23,23 @@ app.use(express.json({ limit: '12mb' }));
 function parseCookies(req){return Object.fromEntries((req.headers.cookie||'').split(';').filter(Boolean).map(v=>{const i=v.indexOf('=');return [v.slice(0,i).trim(),decodeURIComponent(v.slice(i+1))]}))}
 function sign(data){return crypto.createHmac('sha256',SESSION_SECRET).update(data).digest('hex')}
 function makeToken(role){const exp=Date.now()+12*60*60*1000;const data=`${role}.${exp}`;return `${data}.${sign(data)}`}
-function getRole(req){const t=parseCookies(req).featera_session;if(!t)return null;const p=t.split('.');if(p.length!==3)return null;const data=`${p[0]}.${p[1]}`;const a=Buffer.from(sign(data)),b=Buffer.from(p[2]);if(a.length!==b.length||!crypto.timingSafeEqual(a,b))return null;if(Number(p[1])<=Date.now())return null;return ['admin','dj'].includes(p[0])?p[0]:null}
+function getRole(req){const t=parseCookies(req).featera_session;if(!t)return null;const p=t.split('.');if(p.length!==3)return null;const data=`${p[0]}.${p[1]}`;const a=Buffer.from(sign(data)),b=Buffer.from(p[2]);if(a.length!==b.length||!crypto.timingSafeEqual(a,b))return null;if(Number(p[1])<=Date.now())return null;return ['admin','dj','frontdesk'].includes(p[0])?p[0]:null}
 function safeEqual(a,b){const x=Buffer.from(String(a)),y=Buffer.from(String(b));return x.length===y.length&&crypto.timingSafeEqual(x,y)}
 function setSession(res,role){res.setHeader('Set-Cookie',`featera_session=${makeToken(role)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=43200${process.env.RAILWAY_ENVIRONMENT?'; Secure':''}`)}
 
 app.post('/api/login',(req,res)=>{
-  const {user='',pass=''}=req.body||{};
-  if(String(user).toLowerCase()===String(ADMIN_USER).toLowerCase()&&safeEqual(pass,ADMIN_PASSWORD)){
+  const {user='',pass='',portal}=req.body||{};
+  if (typeof user !== 'string' || typeof pass !== 'string') return res.status(400).json({error:'登入資料格式錯誤'});
+  if (portal === 'reports' && FRONTDESK_USER && FRONTDESK_PASSWORD &&
+      user.toLowerCase() === FRONTDESK_USER.toLowerCase() && safeEqual(pass, FRONTDESK_PASSWORD) &&
+      ![ADMIN_USER, DJ_USER].some(name => name.toLowerCase() === user.toLowerCase())) {
+    setSession(res, 'frontdesk');
+    return res.json({ok:true,role:'frontdesk'});
+  }
+  if(ADMIN_PASSWORD && user.toLowerCase()===ADMIN_USER.toLowerCase()&&safeEqual(pass,ADMIN_PASSWORD)){
     setSession(res,'admin');return res.json({ok:true,role:'admin'});
   }
-  if(String(user).toLowerCase()===String(DJ_USER).toLowerCase()&&safeEqual(pass,DJ_PASSWORD)){
+  if(portal !== 'reports' && DJ_PASSWORD && user.toLowerCase()===DJ_USER.toLowerCase()&&safeEqual(pass,DJ_PASSWORD)){
     setSession(res,'dj');return res.json({ok:true,role:'dj'});
   }
   res.status(401).json({error:'帳號或密碼錯誤'});
@@ -56,6 +66,8 @@ app.put('/api/audio-state',async(req,res)=>{
   try{await pool.query("INSERT INTO featera_calendar_state(id,payload,updated_at) VALUES('audio',$1,NOW()) ON CONFLICT(id) DO UPDATE SET payload=EXCLUDED.payload,updated_at=NOW()",[safePayload]);res.json({ok:true,role,updated_at:new Date().toISOString()})}catch(e){console.error(e);res.status(500).json({error:'音控資料儲存失敗'})}
 });
 
+registerReportRoutes(app, pool, getRole);
+
 app.get('/api/health',async(req,res)=>{try{await pool.query('SELECT 1');res.json({ok:true,database:true})}catch(e){res.status(500).json({ok:false,database:false})}});
 
 app.use((req,res,next)=>{
@@ -67,8 +79,12 @@ app.use((req,res,next)=>{
   }
   next();
 });
-app.use(express.static(__dirname,{extensions:['html'],etag:false,lastModified:false,maxAge:0}));
-app.use((req,res)=>res.sendFile(path.join(__dirname,'index.html')));
+app.get([
+  '/index.html', '/reports.html', '/app.js', '/course-types.js', '/report-page.js',
+  '/style.css', '/reports.css', '/seed.json', '/reference.json'
+], (req, res) => res.sendFile(path.join(__dirname, req.path)));
+app.use('/api', (req, res) => res.status(404).json({error:'找不到此功能'}));
+app.get('/', (req,res)=>res.sendFile(path.join(__dirname,'index.html')));
 
 async function init(){
   await pool.query(`CREATE TABLE IF NOT EXISTS featera_calendar_state (
@@ -76,6 +92,7 @@ async function init(){
     payload JSONB NOT NULL DEFAULT '{}'::jsonb,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`);
-  app.listen(PORT,'0.0.0.0',()=>console.log(`FEATERA Calendar PostgreSQL edition v9 running on port ${PORT}`));
+  await initReports(pool);
+  app.listen(PORT,'0.0.0.0',()=>console.log(`FEATERA Calendar PostgreSQL edition v11.21 running on port ${PORT}`));
 }
 init().catch(e=>{console.error('Database initialization failed:',e);process.exit(1)});

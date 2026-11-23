@@ -1,26 +1,41 @@
-# FEATERA Calendar v11.5
+# FEATERA v11.21
+
+延續 v11.20 的行事曆與音控排班，新增「櫃台回報」。從登入畫面進入，也可由管理員行事曆頂端開啟。櫃台與管理員可新增回報、查詢並匯出 Excel。
+
+- 每堂課單獨填報。上課日期和課程名稱相同的多堂課也可分筆儲存。
+- 課程下拉清單使用行事曆的內建類型、已儲存課程清單與既有行程。新增的課程需先由管理員同步至雲端。
+- 人數及 N1～N5、S1～S3 使用非負整數。未使用的產品保留預填的 0。備註最多 2000 字元。
+- 日期、月份、課程條件可一起使用。匯出工作簿包含篩選後的回報明細，以及依日期、課程、月份統計三張工作表。
+
+## GitHub 與 Railway 部署
+
+1. 解壓縮，將所有檔案（含 `.gitignore`、`package-lock.json`）放到 GitHub repository 根目錄並提交。附件的既有種子資料包含人員資料，建議選用私人 repository。
+2. 既有 Railway 服務請沿用同一個 PostgreSQL 服務與 `DATABASE_URL`。新部署在 Railway 連接該 GitHub repository、加入 PostgreSQL，再於應用程式服務設定以下 Variables。
+3. Railway 使用 `npm start` 啟動。如果已自訂 Start Command，請確認它仍然啟動 `node server.js`。Healthcheck Path 可設為 `/api/health`。
+4. 部署啟動時會自動建立 `featera_course_reports` 資料表及日期索引，沿用原有行事曆與音控資料表。連線帳號須有權建立資料表與索引。
+5. 上線後進入「櫃台回報」，填一筆實際課程回報，再確認查詢與 Excel 匯出。亦可分別以管理員、音控和訪客驗證原本的入口。
+
+| Railway Variables | 用途 |
+| --- | --- |
+| `DATABASE_URL` | 沿用既有 PostgreSQL 連線。若服務名為 Postgres，可填 `${{Postgres.DATABASE_URL}}`。 |
+| `ADMIN_USER`、`ADMIN_PASSWORD` | 沿用現有管理員帳密。未設帳號時使用 `Featera`，密碼需要設定。 |
+| `DJ_USER`、`DJ_PASSWORD` | 沿用現有音控帳密。未設帳號時使用 `featera_dj`，密碼需要設定。 |
+| `FRONTDESK_USER`、`FRONTDESK_PASSWORD` | 設定新版櫃台帳密以啟用櫃台登入。帳號須與管理員、音控帳號不同。 |
+| `SESSION_SECRET` | 沿用既有值。新服務請設為隨機密鑰。 |
+
+本版移除舊版公開的預填密碼及通用預設密碼。原先依賴預設密碼的服務，請在部署前設定對應密碼。帳密請在 Railway 設定。
+
+[Railway GitHub 部署](https://docs.railway.com/quick-start) · [Railway PostgreSQL](https://docs.railway.com/databases/postgresql)
+
+## 舊版更新紀錄
+
+### FEATERA Calendar v11.5
 
 本版新增：跨月空白格可雙擊輸入注意事項並同步雲端；同一行可拆成多個文字片段，每個片段可獨立設定顏色、粗體、斜體、底線；主行事曆與音控顯示均支援分段文字。舊資料相容，不需重建 PostgreSQL。
 
-# FEATERA 行事曆排程系統 v9.0
+### FEATERA 行事曆排程系統 v9.0
 
 Railway + PostgreSQL 雲端版。v9.0 新增「音控排程專區」，與講師/主持人完全分開，並使用獨立音控權限。
-
-## Railway Variables
-
-既有：
-- `DATABASE_URL=${{Postgres.DATABASE_URL}}`
-- `ADMIN_USER`
-- `ADMIN_PASSWORD`
-- `SESSION_SECRET`
-
-音控帳號預設即可使用：
-- 帳號：`featera_dj`
-- 密碼：`featera168`
-
-若要改音控帳密，可另外在 Railway Variables 設定：
-- `DJ_USER`
-- `DJ_PASSWORD`
 
 ## v9.0 音控功能
 
@@ -33,13 +48,6 @@ Railway + PostgreSQL 雲端版。v9.0 新增「音控排程專區」，與講師
 - 每一筆音控文字可手動改字、字級、顏色、左/中/右、粗體、斜體、底線。
 - 可匯出 PNG；支援 Web Share 的手機/瀏覽器可直接分享到通訊軟體或 Email，否則下載 PNG。
 - 2026/09 預載畫面中的音控名單與範例排程，之後可完全自行修改。
-
-## GitHub / Railway 更新
-
-將本 ZIP 內所有檔案覆蓋 GitHub repository 根目錄後 Commit。若 Railway 沒有自動抓到最新 commit，使用 Railway 的 **Deploy Latest Commit**。
-
-線上 `index.html` 可搜尋 `9.0.0` 確認已部署最新版。
-
 
 ## v10.0 台灣國定假日
 - 依行政院人事行政總處辦公日曆表內建 2026、2027 國定假日、補假與連假。

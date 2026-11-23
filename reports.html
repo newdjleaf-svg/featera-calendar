@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#24481f">
+  <title>FEATERA 櫃台回報</title>
+  <link rel="stylesheet" href="/style.css?v=11.21.0">
+  <link rel="stylesheet" href="/reports.css?v=11.21.0">
+  <script src="/report-page.js?v=11.21.0" defer></script>
+</head>
+<body class="report-page">
+  <main class="report-content">
+    <header class="report-header">
+      <h1>FEATERA 櫃台回報</h1>
+      <a href="/">回行事曆</a>
+      <button id="reportLogout" type="button" class="secondary" hidden>登出</button>
+    </header>
+
+    <section id="reportLogin" class="report-card" hidden>
+      <h2>登入</h2>
+      <form id="reportLoginForm" class="report-grid">
+        <label>帳號<input name="user" autocomplete="username" required></label>
+        <label>密碼<input name="pass" type="password" autocomplete="current-password" required></label>
+        <div><button class="primary">登入</button></div>
+      </form>
+    </section>
+    <p id="reportStatus" role="status">正在載入…</p>
+
+    <div id="reportWorkspace" hidden>
+      <section class="report-card">
+        <h2>新增課程回報</h2>
+        <form id="reportForm">
+          <div class="report-grid">
+            <label>上課日期<input name="date" type="date" required></label>
+            <label>課程名稱<select name="course" required></select></label>
+            <label>上課人數<input name="attendance" type="number" inputmode="numeric" min="0" max="2147483647" step="1" required></label>
+          </div>
+          <fieldset>
+            <legend>產品用量</legend>
+            <div class="report-grid" id="productInputs"></div>
+          </fieldset>
+          <label>備註<textarea name="notes" rows="3" maxlength="2000"></textarea></label>
+          <button class="primary">儲存回報</button>
+          <p id="saveStatus" role="status"></p>
+        </form>
+      </section>
+
+      <section class="report-card">
+        <h2>查詢與統計</h2>
+        <form id="reportFilters" class="report-grid">
+          <label>日期<input name="date" type="date"></label>
+          <label>月份<input name="month" type="month" pattern="[0-9]{4}-[0-9]{2}" placeholder="YYYY-MM"></label>
+          <label>課程<select name="course"></select></label>
+          <div class="report-actions">
+            <button class="primary">查詢</button>
+            <button type="reset" class="secondary">清除條件</button>
+            <button type="button" id="reportExport" class="secondary" disabled>匯出 Excel</button>
+          </div>
+        </form>
+        <p id="queryStatus" role="status"></p>
+        <div id="reportResults"></div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

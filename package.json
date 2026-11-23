@@ -1,12 +1,13 @@
 {
   "name": "featera-calendar-app",
-  "version": "9.0.0",
+  "version": "11.21.0",
   "private": true,
   "type": "commonjs",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "pg": "^8.16.3"
   }

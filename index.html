@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=11.19.0" />
+  <link rel="stylesheet" href="style.css?v=11.21.0" />
 </head>
 <body>
   <section id="loginView" class="login-view">
@@ -18,16 +18,17 @@
       <p>管理員可編輯、同步與匯出；訪客可瀏覽、匯出與分享。</p>
       <form id="adminLoginForm" class="login-form">
         <label>管理員帳號<input id="loginUser" value="Featera" autocomplete="username"></label>
-        <label>管理員密碼<input id="loginPass" type="password" value="featera168" autocomplete="current-password"></label>
+        <label>管理員密碼<input id="loginPass" type="password" autocomplete="current-password"></label>
         <button class="primary" type="submit">管理員登入</button>
       </form>
       <button id="guestLoginBtn" class="secondary full">訪客登入</button>
       <div class="login-divider"><span>音控專區</span></div>
       <form id="djLoginForm" class="login-form dj-login-form">
         <label>音控帳號<input id="djLoginUser" value="featera_dj" autocomplete="username"></label>
-        <label>音控密碼<input id="djLoginPass" type="password" value="featera168" autocomplete="current-password"></label>
+        <label>音控密碼<input id="djLoginPass" type="password" autocomplete="current-password"></label>
         <button class="dj-primary" type="submit">🎧 音控排程登入</button>
       </form>
+      <p><a href="/reports.html">櫃台回報登入</a></p>
       <div id="loginError" class="error-text"></div>
       <div class="login-note">管理員帳號由 Railway 安全設定；訪客可直接登入瀏覽</div>
     </div>
@@ -41,6 +42,7 @@
         <span id="modeBadge" class="mode-badge">管理員</span>
       </div>
       <div class="topbar-actions">
+        <a href="/reports.html" class="admin-only secondary report-link">櫃台回報</a>
         <button id="cloudBtn" class="secondary">☁ 雲端</button>
         <button id="exportBtn" class="primary">匯出 PNG</button>
         <button id="exportPdfBtn" class="secondary">匯出 PDF</button>
@@ -174,6 +176,7 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
   
-  <script src="app.js?v=11.19.0"></script>
+  <script src="course-types.js?v=11.21.0"></script>
+  <script src="app.js?v=11.21.0"></script>
 </body>
 </html>
